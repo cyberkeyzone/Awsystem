@@ -5,11 +5,11 @@ return function(WindUI, AutoWalkTab)
     local lp = Players.LocalPlayer
 
     -- ==========================================
-    -- KONFIGURASI GITHUB API
+    -- KONFIGURASI GITHUB
     -- ==========================================
     local GITHUB_OWNER = "cyberkeyzone" 
     local GITHUB_REPO = "Awsystem" 
-    local GITHUB_FOLDER = "Routes" 
+    local GITHUB_FOLDER = "Routes" -- Mencari di dalam folder Routes
 
     -- ==========================================
     -- VARIABEL SISTEM & STATE
@@ -18,7 +18,9 @@ return function(WindUI, AutoWalkTab)
     local currentPlaceId = game.PlaceId
     
     local cacheFolderName = "Recording" 
-    if isfolder and not isfolder(cacheFolderName) then makefolder(cacheFolderName) end
+    if isfolder and not isfolder(cacheFolderName) then 
+        pcall(function() makefolder(cacheFolderName) end) 
+    end
 
     local RouteData = nil
     local loadedRouteName = ""
@@ -31,12 +33,11 @@ return function(WindUI, AutoWalkTab)
     local LoadBtn, PlayBtn, StopBtn, StatusPara
 
     -- ==========================================
-    -- FUNGSI INTERNAL DATA (DENGAN ANTI-CRASH)
+    -- FUNGSI INTERNAL DATA
     -- ==========================================
     local function DeserializeData(jsonFrames)
         local deserialized = {}
         for i, frame in ipairs(jsonFrames) do
-            -- Proteksi jika ada frame korup
             if frame and frame.cframe and frame.vel and frame.state then
                 deserialized[i] = {
                     cframe = CFrame.new(unpack(frame.cframe)),
@@ -68,7 +69,7 @@ return function(WindUI, AutoWalkTab)
     end
 
     -- ==========================================
-    -- FUNGSI SMART SCANNER (LOKAL & CLOUD)
+    -- FUNGSI LOAD INSTAN (BYPASS API LIMIT)
     -- ==========================================
     local function ScanLocalCache()
         if not listfiles or not isfolder(cacheFolderName) then return false end
@@ -81,12 +82,11 @@ return function(WindUI, AutoWalkTab)
                 if success and fileData then
                     local jsonSuccess, jsonData = pcall(function() return HttpService:JSONDecode(fileData) end)
                     
-                    -- Cek PlaceId dengan pcall agar tidak crash jika format file salah
                     if jsonSuccess and type(jsonData) == "table" and jsonData.PlaceId then
                         if tostring(jsonData.PlaceId) == tostring(currentPlaceId) then
                             local framesToProcess = jsonData.Frames or jsonData
-                            
                             local desSuccess, resultData = pcall(function() return DeserializeData(framesToProcess) end)
+                            
                             if desSuccess and resultData and #resultData > 0 then
                                 RouteData = resultData
                                 loadedRouteName = fileName
@@ -100,77 +100,62 @@ return function(WindUI, AutoWalkTab)
         return false, "Tidak ada di lokal."
     end
 
-    local function ScanGithubCloud()
-        -- METODE 1 (ULTRA FAST): Cek langsung apakah ada file bernama [PlaceId].json di GitHub
-        -- Ini mem-bypass scanning lambat!
-        local directUrl = string.format("https://raw.githubusercontent.com/%s/%s/main/%s/%s.json", GITHUB_OWNER, GITHUB_REPO, GITHUB_FOLDER, tostring(currentPlaceId))
+    local function DirectCloudFetch()
+        local baseUrl = string.format("https://raw.githubusercontent.com/%s/%s/main/%s", GITHUB_OWNER, GITHUB_REPO, GITHUB_FOLDER)
         if GITHUB_FOLDER == "" then
-            directUrl = string.format("https://raw.githubusercontent.com/%s/%s/main/%s.json", GITHUB_OWNER, GITHUB_REPO, tostring(currentPlaceId))
+            baseUrl = string.format("https://raw.githubusercontent.com/%s/%s/main", GITHUB_OWNER, GITHUB_REPO)
         end
 
-        local fastSuccess, fastResult = pcall(function() return game:HttpGet(directUrl) end)
-        if fastSuccess and fastResult and not fastResult:match("404: Not Found") then
-            local jsonSuccess, jsonData = pcall(function() return HttpService:JSONDecode(fastResult) end)
-            if jsonSuccess and type(jsonData) == "table" and jsonData.Frames then
-                local desSuccess, resultData = pcall(function() return DeserializeData(jsonData.Frames) end)
-                if desSuccess and resultData and #resultData > 0 then
-                    RouteData = resultData
-                    loadedRouteName = tostring(currentPlaceId) .. ".json"
-                    if writefile then pcall(function() writefile(cacheFolderName .. "/" .. loadedRouteName, fastResult) end) end
-                    return true, "Rute Cloud Instan: " .. loadedRouteName
-                end
-            end
-        end
-
-        -- METODE 2 (NORMAL SCAN): Jika file PlaceId.json tidak ada, baru cari manual (Agak lambat)
-        local apiUrl = string.format("https://api.github.com/repos/%s/%s/contents/%s", GITHUB_OWNER, GITHUB_REPO, GITHUB_FOLDER)
-        if GITHUB_FOLDER == "" then apiUrl = string.format("https://api.github.com/repos/%s/%s/contents", GITHUB_OWNER, GITHUB_REPO) end
-
-        local success, result = pcall(function() return game:HttpGet(apiUrl) end)
+        -- PRIORITAS 1: Coba file bernama "[PlaceId].json"
+        local url1 = baseUrl .. "/" .. tostring(currentPlaceId) .. ".json"
+        local s1, r1 = pcall(function() return game:HttpGet(url1) end)
         
-        if success and result and not result:match("404: Not Found") then
-            local decodeSuccess, decodedData = pcall(function() return HttpService:JSONDecode(result) end)
-            
-            if decodeSuccess and type(decodedData) == "table" then
-                for _, file in ipairs(decodedData) do
-                    if file.name and file.name:match("%.json$") then
-                        local dlSuccess, dlResult = pcall(function() return game:HttpGet(file.download_url) end)
-                        
-                        if dlSuccess and dlResult then
-                            local jsonSuccess, jsonData = pcall(function() return HttpService:JSONDecode(dlResult) end)
-                            
-                            if jsonSuccess and type(jsonData) == "table" and jsonData.PlaceId and tostring(jsonData.PlaceId) == tostring(currentPlaceId) then
-                                local framesToProcess = jsonData.Frames or jsonData
-                                local desSuccess, resultData = pcall(function() return DeserializeData(framesToProcess) end)
-                                
-                                if desSuccess and resultData and #resultData > 0 then
-                                    RouteData = resultData
-                                    loadedRouteName = file.name
-                                    if writefile then pcall(function() writefile(cacheFolderName .. "/" .. file.name, dlResult) end) end
-                                    return true, "Rute Cloud ditemukan: " .. file.name
-                                end
-                            end
-                        end
-                    end
-                end
-                return false, "Tidak ada rute di GitHub untuk Map ini (ID: " .. tostring(currentPlaceId) .. ")"
+        if s1 and r1 and not r1:match("404: Not Found") then
+            local js, jd = pcall(function() return HttpService:JSONDecode(r1) end)
+            if js and type(jd) == "table" then
+                RouteData = DeserializeData(jd.Frames or jd)
+                loadedRouteName = tostring(currentPlaceId) .. ".json"
+                if writefile then pcall(function() writefile(cacheFolderName .. "/" .. loadedRouteName, r1) end) end
+                return true, "Rute Cloud Instan: " .. loadedRouteName
             end
         end
-        return false, "Gagal terhubung ke GitHub / API Rate Limit."
+
+        -- PRIORITAS 2: Coba file bernama "record.json" (Fallback manual)
+        local url2 = baseUrl .. "/record.json"
+        local s2, r2 = pcall(function() return game:HttpGet(url2) end)
+        
+        if s2 and r2 and not r2:match("404: Not Found") then
+            local js, jd = pcall(function() return HttpService:JSONDecode(r2) end)
+            if js and type(jd) == "table" then
+                -- Pastikan PlaceId cocok agar karakter tidak error di map lain
+                if jd.PlaceId and tostring(jd.PlaceId) ~= tostring(currentPlaceId) then
+                    return false, "File record.json ditemukan di GitHub, tapi untuk Map yang berbeda!"
+                end
+                
+                RouteData = DeserializeData(jd.Frames or jd)
+                loadedRouteName = "record.json"
+                if writefile then pcall(function() writefile(cacheFolderName .. "/record.json", r2) end) end
+                return true, "Rute Cloud Instan: record.json"
+            end
+        end
+
+        return false, "Rute untuk Map ini belum ada di GitHub (" .. GITHUB_FOLDER .. "/)"
     end
 
     -- ==========================================
     -- UI ELEMENTS (WIND UI)
     -- ==========================================
     StatusPara = AutoWalkTab:Paragraph({
-        Title = "Auto Walk (Smart Scanner)",
+        Title = "Auto Walk (Smart Tracker)",
         Desc = "Status: Menunggu Load... (Map ID: " .. tostring(currentPlaceId) .. ")",
         Color = Color3.fromHex("#0F7BFF")
     })
 
     AutoWalkTab:Slider({
         Title = "⚡ Playspeed Auto Walk",
-        Min = 1, Max = 25, Value = 1,
+        Min = 1, 
+        Max = 25, 
+        Value = 1,
         Callback = function(value)
             playSpeed = value
             if isPlaying then
@@ -179,48 +164,40 @@ return function(WindUI, AutoWalkTab)
         end
     })
 
-    AutoWalkTab:Space()
+    AutoWalkTab:Divider()
 
-    -- 1. TOMBOL LOAD (Pencarian Cerdas & Aman)
+    -- 1. TOMBOL LOAD (Pencarian Cerdas Anti-Stuck)
     LoadBtn = AutoWalkTab:Button({
-        Title = "☁️ Load Auto Walk (Cari Rute)",
+        Title = "☁️ Load Auto Walk",
         Callback = function()
             if not isUnlocked then return WindUI:Notify({Title="Terkunci", Content="Akses ditolak."}) end
             
-            LoadBtn:SetTitle("⏳ Mengecek File...")
-            WindUI:Notify({Title="Loading", Content="Memeriksa rute...", Duration=1.5})
+            LoadBtn:SetTitle("⏳ Menarik Data...")
+            StatusPara:SetDesc("Status: Memeriksa Local & Cloud...")
             
             task.spawn(function()
-                -- Proteksi global error
-                local successMain, resultMain = pcall(function()
-                    -- 1. Cari di Lokal dulu (0.01 Detik)
-                    StatusPara:SetDesc("Status: Mengecek memori Lokal...")
-                    local isLocalFound, localMsg = ScanLocalCache()
-                    
-                    if isLocalFound then return true, localMsg end
-                    
-                    -- 2. Cari di GitHub (Menggunakan metode fast fetch dulu)
-                    StatusPara:SetDesc("Status: Mengecek Cloud GitHub...")
-                    local isCloudFound, cloudMsg = ScanGithubCloud()
-                    
-                    if isCloudFound then return true, cloudMsg end
-                    
-                    return false, cloudMsg
-                end)
-
-                -- Update UI berdasarkan hasil (sukses / gagal)
-                if successMain and resultMain == true then
-                    -- RUTE KETEMU
-                    WindUI:Notify({Title="Sukses!", Content="Rute siap dijalankan.", Duration=2, Icon="check"})
+                -- Cek Cache Lokal terlebih dahulu (Sangat Cepat)
+                local isLocalFound, localMsg = ScanLocalCache()
+                if isLocalFound then
+                    WindUI:Notify({Title="Rute Ditemukan", Content=localMsg, Duration=2, Icon="check"})
+                    StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")")
+                    SetUIVisible(LoadBtn, false)
+                    SetUIVisible(PlayBtn, true)
+                    SetUIVisible(StopBtn, true)
+                    return
+                end
+                
+                -- Jika tidak ada di Lokal, tembak ke URL GitHub secara langsung
+                local isCloudFound, cloudMsg = DirectCloudFetch()
+                if isCloudFound then
+                    WindUI:Notify({Title="Rute Terunduh", Content=cloudMsg, Duration=2, Icon="check"})
                     StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")")
                     SetUIVisible(LoadBtn, false)
                     SetUIVisible(PlayBtn, true)
                     SetUIVisible(StopBtn, true)
                 else
-                    -- RUTE TIDAK KETEMU / ERROR
-                    local errorMsg = type(resultMain) == "string" and resultMain or "Terjadi kesalahan internal file JSON."
-                    WindUI:Notify({Title="Gagal Load", Content=errorMsg, Duration=4, Icon="x"})
-                    StatusPara:SetDesc("Status: Gagal. " .. errorMsg)
+                    WindUI:Notify({Title="Tidak Ditemukan", Content=cloudMsg, Duration=3, Icon="x"})
+                    StatusPara:SetDesc("Status: Gagal. " .. cloudMsg)
                     LoadBtn:SetTitle("☁️ Load Auto Walk (Coba Lagi)")
                 end
             end)
@@ -239,7 +216,7 @@ return function(WindUI, AutoWalkTab)
             local char = lp.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             
-            -- Cari posisi terdekat agar tidak teleport jauh
+            -- Loncati Frame: Mulai dari titik terdekat
             local floatIndex = hrp and FindNearestFrameIndex(RouteData, hrp.Position) or 1
             
             WindUI:Notify({Title="Auto Walk", Content="Melanjutkan dari posisi terdekat!", Duration=2})
@@ -318,7 +295,7 @@ return function(WindUI, AutoWalkTab)
         end
     })
 
-    -- INISIALISASI
+    -- INISIALISASI AWAL
     SetUIVisible(PlayBtn, false)
     SetUIVisible(StopBtn, false)
 end
