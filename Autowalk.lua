@@ -32,7 +32,7 @@ return function(WindUI, AutoWalkTab)
     local isRotated = false
     
     local playConn = nil
-    local playSpeed = 1 
+    local playSpeed = 1.0 -- Sekarang mendukung desimal
     local LoadBtn
 
     -- ==========================================
@@ -204,7 +204,7 @@ return function(WindUI, AutoWalkTab)
     SpeedLabel.Size = UDim2.new(1, -10, 0, 15)
     SpeedLabel.Position = UDim2.new(0, 5, 0, 65)
     SpeedLabel.BackgroundTransparency = 1
-    SpeedLabel.Text = "Speed: 1x"
+    SpeedLabel.Text = "Speed: 1.0x"
     SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     SpeedLabel.Font = Enum.Font.Gotham
     SpeedLabel.TextSize = 10
@@ -273,7 +273,7 @@ return function(WindUI, AutoWalkTab)
     end)
 
     -- ==========================================
-    -- LOGIKA SLIDER
+    -- LOGIKA SLIDER (MENDUKUNG DESIMAL 1.1x, 1.2x)
     -- ==========================================
     local sliderDragging = false
     SliderTouchBtn.InputBegan:Connect(function(input)
@@ -291,8 +291,12 @@ return function(WindUI, AutoWalkTab)
             local percent = math.clamp((mouseX - sliderX) / sliderSize, 0, 1)
             SliderFill.Size = UDim2.new(percent, 0, 1, 0)
             
-            playSpeed = math.floor(1 + (percent * 24))
-            SpeedLabel.Text = "Speed: " .. playSpeed .. "x"
+            -- Menghitung nilai desimal: 1.0 hingga 25.0
+            local rawSpeed = 1 + (percent * 24)
+            playSpeed = math.floor(rawSpeed * 10) / 10 
+            
+            -- Format UI agar selalu 1 angka di belakang koma (contoh: 1.5x)
+            SpeedLabel.Text = string.format("Speed: %.1fx", playSpeed)
         end
     end)
 
@@ -405,12 +409,12 @@ return function(WindUI, AutoWalkTab)
                     end
 
                     if isFlipped then
-                        -- Putar 180 drajat
+                        -- Putar 180 drajat tapi tetap jalan ke arah rute
                         targetCFrame = targetCFrame * CFrame.Angles(0, math.pi, 0)
                     end
 
                     if isRotated then
-                        -- Gasing
+                        -- Berputar/Spin terus menerus
                         targetCFrame = targetCFrame * CFrame.Angles(0, os.clock() * 15, 0)
                     end
                     
@@ -430,6 +434,7 @@ return function(WindUI, AutoWalkTab)
                         hum:Move(Vector3.zero, false) 
                     end
                     
+                    -- Penambahan Kecepatan Desimal
                     if isReversed then
                         floatIndex = floatIndex - playSpeed
                     else
