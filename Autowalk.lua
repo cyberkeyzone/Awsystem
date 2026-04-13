@@ -5,26 +5,38 @@ return function(WindUI, AutoWalkTab)
     local lp = Players.LocalPlayer
 
     -- ==========================================
-    -- VARIABEL & KONFIGURASI
+    -- KONFIGURASI GITHUB API (PENTING!)
+    -- ==========================================
+    -- Sesuaikan dengan repository tempat kamu menyimpan file JSON rekaman
+    local GITHUB_OWNER = "cyberkeyzone" 
+    local GITHUB_REPO = "Awsystem" -- Atau ganti "Imt" jika kamu simpan di repo Imt
+    local GITHUB_FOLDER = "Routes" -- Nama folder di dalam repo tempat nyimpen JSON (Kosongkan "" jika di luar folder)
+
+    -- ==========================================
+    -- VARIABEL SISTEM
     -- ==========================================
     local isUnlocked = (lp.Name == "myzzkey") 
     local currentPlaceId = game.PlaceId
     
-    -- [!] UBAH INI KE LINK RAW FOLDER GITHUB KAMU (Pastikan diakhiri dengan garis miring /)
-    -- Contoh: Jika file kamu ada di "Imt/main/Routes/Rute1.json", maka URL-nya:
-    local GITHUB_REPO_URL = "https://raw.githubusercontent.com/cyberkeyzone/Imt/refs/heads/main/Routes/"
-
     local cacheFolderName = "SYNC_AutoWalkCache"
     if isfolder and not isfolder(cacheFolderName) then makefolder(cacheFolderName) end
 
-    local AvailableRoutes = {}
-    local selectedRoute = "Kosong"
+    -- Cloud Variables
+    local CloudRoutesData = {} -- Menyimpan link download spesifik tiap file dari GitHub
+    local selectedCloudRoute = "Kosong"
+    
+    -- Local Variables
+    local AvailableLocalRoutes = {}
+    local selectedLocalRoute = "Kosong"
     local RouteData = nil
     
     local isPlaying = false
     local playConn = nil
     local playbackIndex = 1
-    local playSpeed = 1 -- Default 1x
+    local playSpeed = 1 
+
+    -- Deklarasi UI Global
+    local CloudDropdown, LocalDropdown
 
     -- ==========================================
     -- FUNGSI INTERNAL (DATA & CACHE)
@@ -42,48 +54,46 @@ return function(WindUI, AutoWalkTab)
     end
 
     local function LoadLocalCache()
-        AvailableRoutes = {}
+        AvailableLocalRoutes = {}
         if listfiles and isfolder(cacheFolderName) then
             for _, filePath in ipairs(listfiles(cacheFolderName)) do
                 if filePath:match("%.json$") then
                     local fileName = filePath:match("([^/\\]+)$")
-                    table.insert(AvailableRoutes, fileName)
+                    table.insert(AvailableLocalRoutes, fileName)
                 end
             end
         end
-        return AvailableRoutes
+        table.sort(AvailableLocalRoutes)
+        return AvailableLocalRoutes
     end
 
-    local function DownloadRouteFromGithub(fileName)
-        -- Pastikan ekstensi .json
-        if not fileName:match("%.json$") then fileName = fileName .. ".json" end
+    -- FUNGSI BARU: Mengambil daftar file langsung dari GitHub API
+    local function FetchGithubRoutes()
+        local apiUrl = string.format("https://api.github.com/repos/%s/%s/contents/%s", GITHUB_OWNER, GITHUB_REPO, GITHUB_FOLDER)
+        if GITHUB_FOLDER == "" then
+            apiUrl = string.format("https://api.github.com/repos/%s/%s/contents", GITHUB_OWNER, GITHUB_REPO)
+        end
+
+        local success, result = pcall(function() return game:HttpGet(apiUrl) end)
         
-        local url = GITHUB_REPO_URL .. fileName
-        local success, result = pcall(function()
-            return game:HttpGet(url)
-        end)
-
         if success and result and not result:match("404: Not Found") then
-            -- Cek apakah file JSON valid dan PlaceId cocok (Format Baru)
             local decodeSuccess, decodedData = pcall(function() return HttpService:JSONDecode(result) end)
-            
-            if decodeSuccess then
-                -- Sistem Validasi Place ID
-                if decodedData.PlaceId and tostring(decodedData.PlaceId) ~= tostring(currentPlaceId) then
-                    return false, "Route ini bukan untuk Map/Game ini! (Beda Place ID)"
+            if decodeSuccess and type(decodedData) == "table" then
+                local list = {}
+                CloudRoutesData = {} -- Reset data lama
+                
+                for _, file in ipairs(decodedData) do
+                    -- Hanya ambil file yang berakhiran .json
+                    if file.name and file.name:match("%.json$") then
+                        table.insert(list, file.name)
+                        CloudRoutesData[file.name] = file.download_url -- Simpan raw URL-nya
+                    end
                 end
-
-                -- Simpan ke Cache Lokal
-                local savePath = cacheFolderName .. "/" .. fileName
-                if writefile then
-                    writefile(savePath, result)
-                    return true, "Berhasil mendownload & cache: " .. fileName
-                end
-            else
-                return false, "Format JSON rusak/tidak valid dari GitHub."
+                table.sort(list)
+                return true, list
             end
         end
-        return false, "Gagal mendownload. File tidak ditemukan di GitHub."
+        return false, "Gagal terhubung ke GitHub atau folder tidak ditemukan."
     end
 
     local function FindNearestFrameIndex(data, currentPos)
@@ -103,66 +113,113 @@ return function(WindUI, AutoWalkTab)
     -- UI ELEMENTS (WIND UI)
     -- ==========================================
     AutoWalkTab:Paragraph({
-        Title = "Cloud Auto Walk",
-        Desc = "Download rute JSON dari GitHub dan jalankan secara otomatis. Dilengkapi deteksi Map (Place ID) agar tidak error.",
+        Title = "Cloud Auto Walk System",
+        Desc = "Scan daftar rute langsung dari GitHub, Download, dan jalankan otomatis. (Place ID: " .. tostring(currentPlaceId) .. ")",
         Color = Color3.fromHex("#0F7BFF")
     })
 
     local InfoPara = AutoWalkTab:Paragraph({
-        Title = "Status",
-        Desc = "Idle. Place ID saat ini: " .. tostring(currentPlaceId),
+        Title = "Status Sistem",
+        Desc = "Siap digunakan. Silakan scan rute dari Cloud atau pilih dari Local Cache.",
         Color = Color3.fromHex("#29F89B")
     })
 
-    -- 1. CLOUD DOWNLOADER
+    -- ==========================================
+    -- 1. CLOUD DOWNLOADER (DARI GITHUB)
+    -- ==========================================
     AutoWalkTab:Divider()
-    local githubInputText = ""
-    AutoWalkTab:Input({
-        Title = "Download JSON dari GitHub",
-        Placeholder = "Ketik nama file (contoh: Rute_A.json)",
-        Callback = function(text)
-            githubInputText = text
-        end
-    })
-
-    local RouteDropdown -- Deklarasi awal agar bisa di-refresh
-
+    
     AutoWalkTab:Button({
-        Title = "☁️ Redownload / Fetch dari GitHub",
-        Icon = "download",
+        Title = "🔄 Scan Rute di GitHub",
+        Icon = "search",
         Callback = function()
             if not isUnlocked then return WindUI:Notify({Title="Terkunci", Content="Akses ditolak."}) end
-            if githubInputText == "" then return WindUI:Notify({Title="Error", Content="Masukkan nama file terlebih dahulu!", Duration=2}) end
+            WindUI:Notify({Title="Scanning", Content="Mencari file .json di GitHub...", Duration=1.5})
             
-            WindUI:Notify({Title="Mendownload", Content="Mengambil data dari GitHub...", Duration=1.5})
-            local success, msg = DownloadRouteFromGithub(githubInputText)
-            
+            local success, dataList = FetchGithubRoutes()
             if success then
-                WindUI:Notify({Title="Sukses", Content=msg, Duration=2, Icon="check"})
-                -- Refresh dropdown
-                local list = LoadLocalCache()
-                if #list == 0 then table.insert(list, "Kosong") end
-                if RouteDropdown then RouteDropdown:Refresh(list) end
+                if #dataList > 0 then
+                    CloudDropdown:Refresh(dataList)
+                    WindUI:Notify({Title="Sukses", Content="Menemukan " .. #dataList .. " rute di Cloud!", Duration=2, Icon="check"})
+                else
+                    CloudDropdown:Refresh({"Kosong (Tidak ada .json)"})
+                    WindUI:Notify({Title="Kosong", Content="Tidak ada file JSON di folder GitHub tersebut.", Duration=2})
+                end
             else
-                WindUI:Notify({Title="Gagal", Content=msg, Duration=3, Icon="x"})
+                WindUI:Notify({Title="Error API", Content=dataList, Duration=3, Icon="x"})
             end
         end
     })
 
-    -- 2. LOCAL CACHE MANAGER
-    AutoWalkTab:Divider()
-    RouteDropdown = AutoWalkTab:Dropdown({
-        Title = "Pilih Rute (Local Cache)",
-        Values = {"Kosong"},
-        Value = "Kosong",
+    CloudDropdown = AutoWalkTab:Dropdown({
+        Title = "☁️ Pilih Rute dari Cloud",
+        Values = {"Klik Scan Rute Dulu"},
+        Value = "Klik Scan Rute Dulu",
         SearchBarEnabled = true,
         Callback = function(opt)
-            selectedRoute = type(opt) == "table" and opt.Title or opt
+            selectedCloudRoute = type(opt) == "table" and opt.Title or opt
         end
     })
 
     AutoWalkTab:Button({
-        Title = "🗑️ Hapus Semua Cache JSON",
+        Title = "⬇️ Download & Masukkan ke Cache",
+        Icon = "download",
+        Callback = function()
+            if not isUnlocked then return end
+            if not CloudRoutesData[selectedCloudRoute] then
+                return WindUI:Notify({Title="Error", Content="Pilih rute yang valid dari Cloud Dropdown!", Duration=2})
+            end
+            
+            local downloadUrl = CloudRoutesData[selectedCloudRoute]
+            WindUI:Notify({Title="Mendownload", Content="Mengunduh " .. selectedCloudRoute .. "...", Duration=1.5})
+            
+            local success, result = pcall(function() return game:HttpGet(downloadUrl) end)
+            if success and result then
+                local decodeSuccess, decodedData = pcall(function() return HttpService:JSONDecode(result) end)
+                
+                if decodeSuccess then
+                    -- Sistem Validasi Place ID Otomatis
+                    if decodedData.PlaceId and tostring(decodedData.PlaceId) ~= tostring(currentPlaceId) then
+                        return WindUI:Notify({Title="Ditolak", Content="Rute ini untuk game lain! (Beda Place ID)", Duration=3, Icon="x"})
+                    end
+
+                    -- Simpan ke Cache Lokal
+                    if writefile then
+                        local savePath = cacheFolderName .. "/" .. selectedCloudRoute
+                        writefile(savePath, result)
+                        WindUI:Notify({Title="Sukses", Content=selectedCloudRoute .. " berhasil disimpan ke Cache!", Duration=2, Icon="check"})
+                        
+                        -- Auto refresh Local Cache Dropdown
+                        local list = LoadLocalCache()
+                        if #list == 0 then table.insert(list, "Kosong") end
+                        if LocalDropdown then LocalDropdown:Refresh(list) end
+                    end
+                else
+                    WindUI:Notify({Title="Error", Content="File JSON rusak/tidak valid.", Duration=2})
+                end
+            else
+                WindUI:Notify({Title="Error", Content="Gagal mengunduh dari GitHub.", Duration=2})
+            end
+        end
+    })
+
+    -- ==========================================
+    -- 2. LOCAL CACHE MANAGER
+    -- ==========================================
+    AutoWalkTab:Divider()
+    
+    LocalDropdown = AutoWalkTab:Dropdown({
+        Title = "📁 Pilih Rute (Local Cache)",
+        Values = {"Kosong"},
+        Value = "Kosong",
+        SearchBarEnabled = true,
+        Callback = function(opt)
+            selectedLocalRoute = type(opt) == "table" and opt.Title or opt
+        end
+    })
+
+    AutoWalkTab:Button({
+        Title = "🗑️ Hapus Semua Cache Rute",
         Icon = "trash",
         Callback = function()
             if not isUnlocked then return end
@@ -173,66 +230,66 @@ return function(WindUI, AutoWalkTab)
                     delfolder(cacheFolderName)
                     makefolder(cacheFolderName)
                 else
-                    -- Fallback untuk executor yg tidak punya delfolder
                     for _, file in ipairs(listfiles(cacheFolderName)) do
                         if delfile then delfile(file) end
                     end
                 end
                 
-                WindUI:Notify({Title="Cache Dihapus", Content="Semua file JSON lokal telah dibersihkan.", Duration=2, Icon="trash"})
+                WindUI:Notify({Title="Cache Bersih", Content="Semua rute lokal dihapus.", Duration=2, Icon="trash"})
                 local list = LoadLocalCache()
                 if #list == 0 then table.insert(list, "Kosong") end
-                if RouteDropdown then RouteDropdown:Refresh(list) end
+                if LocalDropdown then LocalDropdown:Refresh(list) end
             end
         end
     })
 
+    -- ==========================================
     -- 3. PLAYBACK CONTROLS & SPEED
+    -- ==========================================
     AutoWalkTab:Divider()
+    
     AutoWalkTab:Slider({
-        Title = "Kecepatan Playback (Speed)",
-        Min = 1,
-        Max = 25,
-        Value = 1,
+        Title = "Kecepatan (Speed Multiplier)",
+        Min = 1, Max = 25, Value = 1,
         Callback = function(value)
             playSpeed = value
-            InfoPara:SetDesc("Speed diatur ke: " .. playSpeed .. "x")
+            if not isPlaying then
+                InfoPara:SetDesc("Speed diatur ke: " .. playSpeed .. "x")
+            end
         end
     })
 
-    local PlayBtn = AutoWalkTab:Button({
+    AutoWalkTab:Button({
         Title = "▶️ Mulai Auto Walk",
         Icon = "play",
         Callback = function()
             if not isUnlocked then return WindUI:Notify({Title="Terkunci", Content="Akses ditolak."}) end
             if isPlaying then return WindUI:Notify({Title="Gagal", Content="Sudah berjalan!"}) end
-            if selectedRoute == "Kosong" then return WindUI:Notify({Title="Error", Content="Pilih rute dari cache!"}) end
+            if selectedLocalRoute == "Kosong" then return WindUI:Notify({Title="Error", Content="Pilih rute dari Local Cache!"}) end
             
-            -- Load JSON dari Cache
-            local filePath = cacheFolderName .. "/" .. selectedRoute
-            if not isfile(filePath) then return WindUI:Notify({Title="Error", Content="File tidak ditemukan di cache!"}) end
+            local filePath = cacheFolderName .. "/" .. selectedLocalRoute
+            if not isfile(filePath) then return WindUI:Notify({Title="Error", Content="File tidak ada di cache!"}) end
             
             local decodeSuccess, decodedData = pcall(function() return HttpService:JSONDecode(readfile(filePath)) end)
             if not decodeSuccess or not decodedData.Frames then
-                return WindUI:Notify({Title="Error", Content="File JSON rusak atau tidak kompatibel!"})
+                return WindUI:Notify({Title="Error", Content="Data rekaman rusak!"})
             end
 
-            -- Validasi Keamanan Place ID
+            -- Validasi Terakhir Place ID
             if decodedData.PlaceId and tostring(decodedData.PlaceId) ~= tostring(currentPlaceId) then
                 return WindUI:Notify({Title="Aman", Content="Auto Walk dibatalkan. Rute ini untuk Map lain!", Duration=3})
             end
 
             RouteData = DeserializeData(decodedData.Frames)
             
-            -- Mulai Playback
             isPlaying = true
             local char = lp.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
             
-            -- Cari posisi terdekat
+            -- Cari posisi terdekat agar smooth
             local floatIndex = hrp and FindNearestFrameIndex(RouteData, hrp.Position) or 1
             
-            WindUI:Notify({Title="Mulai", Content="Auto Walk berjalan (".. playSpeed .."x speed)", Duration=2})
+            WindUI:Notify({Title="Mulai", Content="Menjalankan rute (".. playSpeed .."x speed)", Duration=2})
             
             if playConn then playConn:Disconnect() end
             playConn = RunService.Heartbeat:Connect(function()
@@ -242,7 +299,6 @@ return function(WindUI, AutoWalkTab)
                 
                 if not hrp or not hum then return end
                 
-                -- Kalkulasi Speed Multiplier
                 local actualIndex = math.floor(floatIndex)
                 
                 if RouteData[actualIndex] then
@@ -260,20 +316,19 @@ return function(WindUI, AutoWalkTab)
                         else hum:Move(Vector3.zero, false) end
                     else hum:Move(Vector3.zero, false) end
 
-                    InfoPara:SetDesc(string.format("Menjalankan: %s\nFrame: %d / %d (Speed: %dx)", selectedRoute, actualIndex, #RouteData, playSpeed))
+                    InfoPara:SetDesc(string.format("🟢 Berjalan: %s\nFrame: %d / %d\nKecepatan: %dx", selectedLocalRoute, actualIndex, #RouteData, playSpeed))
                     
-                    -- Loncat Frame sesuai kecepatan
+                    -- Loncati frame sesuai Speed Multiplier
                     floatIndex = floatIndex + playSpeed
                 else
-                    -- Selesai
                     if playConn then playConn:Disconnect() end
                     hum:Move(Vector3.zero, false) 
                     hum:ChangeState(Enum.HumanoidStateType.Running)
                     hrp.AssemblyLinearVelocity = Vector3.zero
                     
                     isPlaying = false
-                    InfoPara:SetDesc("Status: Selesai / Idle.")
-                    WindUI:Notify({Title="Selesai", Content="Rute Auto Walk selesai!", Duration=2})
+                    InfoPara:SetDesc("✅ Rute Selesai / Idle.")
+                    WindUI:Notify({Title="Selesai", Content="Rute Auto Walk tercapai!", Duration=2})
                 end
             end)
         end
@@ -288,13 +343,13 @@ return function(WindUI, AutoWalkTab)
             if char and char:FindFirstChildOfClass("Humanoid") then char:FindFirstChildOfClass("Humanoid"):Move(Vector3.zero, false) end
             
             isPlaying = false
-            InfoPara:SetDesc("Status: Auto Walk dihentikan paksa.")
+            InfoPara:SetDesc("⏹️ Dihentikan paksa / Idle.")
             WindUI:Notify({Title="Stop", Content="Berhasil dihentikan.", Duration=1.5})
         end
     })
 
-    -- INIT CACHE SAAT DIBUKA
+    -- INIT CACHE LOKAL SAAT DIBUKA
     local initList = LoadLocalCache()
     if #initList == 0 then table.insert(initList, "Kosong") end
-    if RouteDropdown then RouteDropdown:Refresh(initList) end
+    if LocalDropdown then LocalDropdown:Refresh(initList) end
 end
