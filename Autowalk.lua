@@ -62,9 +62,9 @@ return function(WindUI, AutoWalkTab)
         return nearestIdx
     end
 
-    local function SetUIVisible(element, isVisible)
-        if element and element.Instance then
-            pcall(function() element.Instance.Visible = isVisible end)
+    local function SafeSetTitle(btn, newTitle)
+        if btn then
+            pcall(function() btn:SetTitle(newTitle) end)
         end
     end
 
@@ -90,7 +90,7 @@ return function(WindUI, AutoWalkTab)
                             if desSuccess and resultData and #resultData > 0 then
                                 RouteData = resultData
                                 loadedRouteName = fileName
-                                return true, "Dimuat instan dari Local Cache (" .. fileName .. ")"
+                                return true, "Rute Lokal: " .. fileName
                             end
                         end
                     end
@@ -113,10 +113,14 @@ return function(WindUI, AutoWalkTab)
         if s1 and r1 and not r1:match("404: Not Found") then
             local js, jd = pcall(function() return HttpService:JSONDecode(r1) end)
             if js and type(jd) == "table" then
-                RouteData = DeserializeData(jd.Frames or jd)
-                loadedRouteName = tostring(currentPlaceId) .. ".json"
-                if writefile then pcall(function() writefile(cacheFolderName .. "/" .. loadedRouteName, r1) end) end
-                return true, "Rute Cloud Instan: " .. loadedRouteName
+                local framesToProcess = jd.Frames or jd
+                local desSuccess, resultData = pcall(function() return DeserializeData(framesToProcess) end)
+                if desSuccess and resultData and #resultData > 0 then
+                    RouteData = resultData
+                    loadedRouteName = tostring(currentPlaceId) .. ".json"
+                    if writefile then pcall(function() writefile(cacheFolderName .. "/" .. loadedRouteName, r1) end) end
+                    return true, "Rute Cloud: " .. loadedRouteName
+                end
             end
         end
 
@@ -127,19 +131,22 @@ return function(WindUI, AutoWalkTab)
         if s2 and r2 and not r2:match("404: Not Found") then
             local js, jd = pcall(function() return HttpService:JSONDecode(r2) end)
             if js and type(jd) == "table" then
-                -- Pastikan PlaceId cocok agar karakter tidak error di map lain
                 if jd.PlaceId and tostring(jd.PlaceId) ~= tostring(currentPlaceId) then
-                    return false, "File record.json ditemukan di GitHub, tapi untuk Map yang berbeda!"
+                    return false, "File record.json ada di GitHub, tapi Place ID beda!"
                 end
                 
-                RouteData = DeserializeData(jd.Frames or jd)
-                loadedRouteName = "record.json"
-                if writefile then pcall(function() writefile(cacheFolderName .. "/record.json", r2) end) end
-                return true, "Rute Cloud Instan: record.json"
+                local framesToProcess = jd.Frames or jd
+                local desSuccess, resultData = pcall(function() return DeserializeData(framesToProcess) end)
+                if desSuccess and resultData and #resultData > 0 then
+                    RouteData = resultData
+                    loadedRouteName = "record.json"
+                    if writefile then pcall(function() writefile(cacheFolderName .. "/record.json", r2) end) end
+                    return true, "Rute Cloud: record.json"
+                end
             end
         end
 
-        return false, "Rute untuk Map ini belum ada di GitHub (" .. GITHUB_FOLDER .. "/)"
+        return false, "Rute belum tersedia di GitHub."
     end
 
     -- ==========================================
@@ -151,10 +158,12 @@ return function(WindUI, AutoWalkTab)
         Color = Color3.fromHex("#0F7BFF")
     })
 
+    -- Slider Speed (Aman dari crash)
     AutoWalkTab:Slider({
         Title = "⚡ Playspeed Auto Walk",
         Min = 1, 
         Max = 25, 
+        Default = 1,
         Value = 1,
         Callback = function(value)
             playSpeed = value
@@ -164,54 +173,55 @@ return function(WindUI, AutoWalkTab)
         end
     })
 
-    AutoWalkTab:Divider()
-
     -- 1. TOMBOL LOAD (Pencarian Cerdas Anti-Stuck)
     LoadBtn = AutoWalkTab:Button({
         Title = "☁️ Load Auto Walk",
         Callback = function()
             if not isUnlocked then return WindUI:Notify({Title="Terkunci", Content="Akses ditolak."}) end
             
-            LoadBtn:SetTitle("⏳ Menarik Data...")
+            SafeSetTitle(LoadBtn, "⏳ Menarik Data...")
             StatusPara:SetDesc("Status: Memeriksa Local & Cloud...")
             
             task.spawn(function()
-                -- Cek Cache Lokal terlebih dahulu (Sangat Cepat)
+                -- Cek Cache Lokal terlebih dahulu
                 local isLocalFound, localMsg = ScanLocalCache()
                 if isLocalFound then
-                    WindUI:Notify({Title="Rute Ditemukan", Content=localMsg, Duration=2, Icon="check"})
+                    WindUI:Notify({Title="Rute Terpasang", Content=localMsg, Duration=2, Icon="check"})
                     StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")")
-                    SetUIVisible(LoadBtn, false)
-                    SetUIVisible(PlayBtn, true)
-                    SetUIVisible(StopBtn, true)
+                    SafeSetTitle(LoadBtn, "✅ Rute Ter-Load (" .. loadedRouteName .. ")")
+                    SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
+                    SafeSetTitle(StopBtn, "⏹️ Stop Auto Walk")
                     return
                 end
                 
-                -- Jika tidak ada di Lokal, tembak ke URL GitHub secara langsung
+                -- Jika tidak ada di Lokal, tembak ke URL GitHub
                 local isCloudFound, cloudMsg = DirectCloudFetch()
                 if isCloudFound then
                     WindUI:Notify({Title="Rute Terunduh", Content=cloudMsg, Duration=2, Icon="check"})
                     StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")")
-                    SetUIVisible(LoadBtn, false)
-                    SetUIVisible(PlayBtn, true)
-                    SetUIVisible(StopBtn, true)
+                    SafeSetTitle(LoadBtn, "✅ Rute Ter-Load (" .. loadedRouteName .. ")")
+                    SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
+                    SafeSetTitle(StopBtn, "⏹️ Stop Auto Walk")
                 else
                     WindUI:Notify({Title="Tidak Ditemukan", Content=cloudMsg, Duration=3, Icon="x"})
                     StatusPara:SetDesc("Status: Gagal. " .. cloudMsg)
-                    LoadBtn:SetTitle("☁️ Load Auto Walk (Coba Lagi)")
+                    SafeSetTitle(LoadBtn, "☁️ Load Auto Walk (Coba Lagi)")
                 end
             end)
         end
     })
 
-    -- 2. TOMBOL PLAY
+    -- 2. TOMBOL PLAY (Mode Terkunci di Awal)
     PlayBtn = AutoWalkTab:Button({
-        Title = "▶️ Play Auto Walk",
+        Title = "🚫 Play (Terkunci)",
         Callback = function()
-            if not isUnlocked or isPlaying or not RouteData then return end
+            if not isUnlocked or isPlaying or not RouteData then 
+                if not RouteData then WindUI:Notify({Title="Gagal", Content="Load Rute terlebih dahulu!", Duration=2}) end
+                return 
+            end
             
             isPlaying = true
-            SetUIVisible(PlayBtn, false)
+            SafeSetTitle(PlayBtn, "🔄 Sedang Berjalan...")
             
             local char = lp.Character
             local hrp = char and char:FindFirstChild("HumanoidRootPart")
@@ -264,15 +274,15 @@ return function(WindUI, AutoWalkTab)
                     isPlaying = false
                     StatusPara:SetDesc("Status: Tujuan Tercapai.")
                     WindUI:Notify({Title="Selesai", Content="Rute Auto Walk tercapai!", Duration=2})
-                    SetUIVisible(PlayBtn, true) 
+                    SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
                 end
             end)
         end
     })
 
-    -- 3. TOMBOL STOP
+    -- 3. TOMBOL STOP (Mode Terkunci di Awal)
     StopBtn = AutoWalkTab:Button({
-        Title = "⏹️ Stop Auto Walk",
+        Title = "🚫 Stop (Terkunci)",
         Callback = function()
             if not RouteData then return end 
             
@@ -291,11 +301,8 @@ return function(WindUI, AutoWalkTab)
             isPlaying = false
             StatusPara:SetDesc("Status: Dihentikan (Standby).")
             WindUI:Notify({Title="Stop", Content="Auto Walk dihentikan.", Duration=1.5})
-            SetUIVisible(PlayBtn, true)
+            SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
         end
     })
 
-    -- INISIALISASI AWAL
-    SetUIVisible(PlayBtn, false)
-    SetUIVisible(StopBtn, false)
 end
