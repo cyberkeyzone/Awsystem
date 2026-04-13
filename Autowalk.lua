@@ -9,7 +9,7 @@ return function(WindUI, AutoWalkTab)
     -- ==========================================
     local GITHUB_OWNER = "cyberkeyzone" 
     local GITHUB_REPO = "Awsystem" 
-    local GITHUB_FOLDER = "Routes" -- Kosongkan jika file JSON ada di luar/root
+    local GITHUB_FOLDER = "" -- Kosongkan jika file JSON ada di luar/root
 
     -- ==========================================
     -- VARIABEL SISTEM & STATE
