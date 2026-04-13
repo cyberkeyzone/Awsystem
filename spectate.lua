@@ -1,19 +1,17 @@
 return function(WindUI, OptionalTab)
     local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
     local lp = Players.LocalPlayer
     local camera = workspace.CurrentCamera
 
-    -- ==========================================
-    -- UI HEADER
-    -- ==========================================
     OptionalTab:Paragraph({
-        Title = "Spectate System",
-        Desc = "Pantau pergerakan pemain lain di server secara real-time.",
+        Title = "Force Spectate System",
+        Desc = "Kamera akan terus memaksa mengunci target dan memaksa server merender area di sekitarnya.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
     -- ==========================================
-    -- FUNGSI GET PLAYER LIST
+    -- AUTO-UPDATE PLAYER LIST
     -- ==========================================
     local function GetPlayerList()
         local list = {}
@@ -27,10 +25,8 @@ return function(WindUI, OptionalTab)
         return list
     end
 
-    -- ==========================================
-    -- UI ELEMENTS (SPECTATE)
-    -- ==========================================
     local selectedTargetPlayer = ""
+    local spectateConn = nil
     
     local PlayerDropdown = OptionalTab:Dropdown({
         Title = "👤 Pilih Player",
@@ -42,47 +38,73 @@ return function(WindUI, OptionalTab)
         end
     })
 
-    OptionalTab:Button({
-        Title = "🔄 Refresh Daftar Player",
-        Callback = function()
-            if PlayerDropdown then
-                PlayerDropdown:Refresh(GetPlayerList())
-                WindUI:Notify({Title="Refresh", Content="Daftar pemain diperbarui!", Duration=1.5})
-            end
-        end
-    })
+    -- Refresh otomatis jika ada pemain yang masuk/keluar
+    Players.PlayerAdded:Connect(function()
+        if PlayerDropdown then pcall(function() PlayerDropdown:Refresh(GetPlayerList()) end) end
+    end)
+    Players.PlayerRemoving:Connect(function()
+        if PlayerDropdown then pcall(function() PlayerDropdown:Refresh(GetPlayerList()) end) end
+    end)
 
     OptionalTab:Divider()
 
+    -- ==========================================
+    -- LOGIKA SPECTATE
+    -- ==========================================
+    local function StopSpectating()
+        if spectateConn then 
+            spectateConn:Disconnect() 
+            spectateConn = nil
+        end
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+            camera.CameraSubject = lp.Character.Humanoid
+        end
+    end
+
     OptionalTab:Button({
-        Title = "👁️ Spectate Player",
+        Title = "👁️ Force Spectate Player",
         Callback = function()
             if selectedTargetPlayer == "" or selectedTargetPlayer == "Pilih Pemain" or selectedTargetPlayer == "Tidak ada pemain lain" then 
                 return WindUI:Notify({Title="Error", Content="Pilih pemain terlebih dahulu!", Duration=2, Icon="x"}) 
             end
             
-            -- Ekstrak username asli dari format "DisplayName (@Username)"
             local targetName = string.match(selectedTargetPlayer, "@([^%)]+)") or selectedTargetPlayer
-            local targetPlr = Players:FindFirstChild(targetName)
             
-            if targetPlr and targetPlr.Character and targetPlr.Character:FindFirstChild("Humanoid") then
-                camera.CameraSubject = targetPlr.Character.Humanoid
-                WindUI:Notify({Title="Spectating", Content="Menonton: " .. targetName, Duration=2, Icon="check"})
-            else
-                WindUI:Notify({Title="Gagal", Content="Karakter pemain tidak ditemukan / belum spawn!", Duration=2, Icon="x"})
-            end
+            WindUI:Notify({Title="Force Lock", Content="Menghubungkan ke " .. targetName .. "...", Duration=2})
+            StopSpectating() 
+            
+            -- LOOP TAK TERBATAS: Memaksa menembus StreamingEnabled
+            spectateConn = RunService.RenderStepped:Connect(function()
+                local tPlr = Players:FindFirstChild(targetName)
+                if tPlr and tPlr.Character then
+                    -- Cari bagian tubuh mana saja yang dirender oleh server
+                    local hum = tPlr.Character:FindFirstChildOfClass("Humanoid")
+                    local hrp = tPlr.Character:FindFirstChild("HumanoidRootPart")
+                    local head = tPlr.Character:FindFirstChild("Head")
+                    local anyPart = tPlr.Character:FindFirstChildWhichIsA("BasePart")
+                    
+                    local subject = hum or hrp or head or anyPart
+                    
+                    if subject then
+                        camera.CameraSubject = subject
+                        
+                        -- PING SERVER: Paksa server mengirim data visual area sekitar target ke HP kita
+                        if subject:IsA("BasePart") then
+                            pcall(function() lp:RequestStreamAroundAsync(subject.Position) end)
+                        elseif subject:IsA("Humanoid") and subject.RootPart then
+                            pcall(function() lp:RequestStreamAroundAsync(subject.RootPart.Position) end)
+                        end
+                    end
+                end
+            end)
         end
     })
 
     OptionalTab:Button({
-        Title = "🛑 Stop Spectate (Kembali)",
+        Title = "🛑 Stop Spectate",
         Callback = function()
-            if lp.Character and lp.Character:FindFirstChild("Humanoid") then
-                camera.CameraSubject = lp.Character.Humanoid
-                WindUI:Notify({Title="Stop", Content="Kamera kembali normal.", Duration=2})
-            else
-                WindUI:Notify({Title="Gagal", Content="Karaktermu belum spawn!", Duration=2})
-            end
+            StopSpectating()
+            WindUI:Notify({Title="Stop", Content="Kamera kembali ke karaktermu.", Duration=2})
         end
     })
 end
