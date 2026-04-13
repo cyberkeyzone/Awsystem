@@ -20,11 +20,14 @@ return function(WindUI, AutoWalkTab)
     local currentPlaceId = game.PlaceId
     
     local cacheFolderName = "Recording" 
-    if isfolder and not isfolder(cacheFolderName) then pcall(function() makefolder(cacheFolderName) end) end
+    if isfolder and not isfolder(cacheFolderName) then 
+        pcall(function() makefolder(cacheFolderName) end) 
+    end
 
     local RouteData = nil
     
     local isPlaying = false
+    local isFlipped = false -- Mode putar balik
     local playConn = nil
     local playSpeed = 1 
 
@@ -130,7 +133,7 @@ return function(WindUI, AutoWalkTab)
     end
 
     -- ==========================================
-    -- CUSTOM LOCAL UI (SCREEN GUI KECIL & PAS)
+    -- CUSTOM LOCAL UI (ULTRA COMPACT MOBILE)
     -- ==========================================
     local FloatingUI = Instance.new("ScreenGui")
     FloatingUI.Name = "SYNC_AutoWalkPanel"
@@ -155,10 +158,10 @@ return function(WindUI, AutoWalkTab)
     WidgetStroke.Thickness = 2
     WidgetStroke.Parent = WidgetBtn
 
-    -- 2. Main Panel (Kecil, Horizontal)
+    -- 2. Main Panel (Diperkecil)
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 180, 0, 90)
-    MainFrame.Position = UDim2.new(0.5, -90, 0.1, 55)
+    MainFrame.Size = UDim2.new(0, 150, 0, 85) -- Panel lebih kecil
+    MainFrame.Position = UDim2.new(0.5, -75, 0.1, 55)
     MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
     MainFrame.BorderSizePixel = 0
     MainFrame.Visible = false 
@@ -170,46 +173,46 @@ return function(WindUI, AutoWalkTab)
     UIStroke.Thickness = 1.5
     UIStroke.Parent = MainFrame
 
-    -- Tombol Play (Kiri)
+    -- Tombol Play/Stop (Toggle) Kiri
     local PlayPanelBtn = Instance.new("TextButton")
-    PlayPanelBtn.Size = UDim2.new(0, 75, 0, 30)
+    PlayPanelBtn.Size = UDim2.new(0, 60, 0, 28)
     PlayPanelBtn.Position = UDim2.new(0, 10, 0, 10)
     PlayPanelBtn.BackgroundColor3 = Color3.fromRGB(40, 130, 230)
     PlayPanelBtn.Text = "▶️ Play"
     PlayPanelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     PlayPanelBtn.Font = Enum.Font.GothamBold
-    PlayPanelBtn.TextSize = 12
+    PlayPanelBtn.TextSize = 11
     Instance.new("UICorner", PlayPanelBtn).CornerRadius = UDim.new(0, 6)
     PlayPanelBtn.Parent = MainFrame
 
-    -- Tombol Stop (Kanan)
-    local StopPanelBtn = Instance.new("TextButton")
-    StopPanelBtn.Size = UDim2.new(0, 75, 0, 30)
-    StopPanelBtn.Position = UDim2.new(1, -85, 0, 10)
-    StopPanelBtn.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
-    StopPanelBtn.Text = "⏹️ Stop"
-    StopPanelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    StopPanelBtn.Font = Enum.Font.GothamBold
-    StopPanelBtn.TextSize = 12
-    Instance.new("UICorner", StopPanelBtn).CornerRadius = UDim.new(0, 6)
-    StopPanelBtn.Parent = MainFrame
+    -- Tombol Flip (Kanan)
+    local FlipBtn = Instance.new("TextButton")
+    FlipBtn.Size = UDim2.new(0, 60, 0, 28)
+    FlipBtn.Position = UDim2.new(1, -70, 0, 10)
+    FlipBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
+    FlipBtn.Text = "🔄 Normal"
+    FlipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FlipBtn.Font = Enum.Font.GothamBold
+    FlipBtn.TextSize = 11
+    Instance.new("UICorner", FlipBtn).CornerRadius = UDim.new(0, 6)
+    FlipBtn.Parent = MainFrame
 
     -- Info Speed
     local SpeedLabel = Instance.new("TextLabel")
     SpeedLabel.Size = UDim2.new(1, -20, 0, 15)
-    SpeedLabel.Position = UDim2.new(0, 10, 0, 48)
+    SpeedLabel.Position = UDim2.new(0, 10, 0, 45)
     SpeedLabel.BackgroundTransparency = 1
     SpeedLabel.Text = "Speed: 1x"
     SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     SpeedLabel.Font = Enum.Font.Gotham
-    SpeedLabel.TextSize = 11
+    SpeedLabel.TextSize = 10
     SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
     SpeedLabel.Parent = MainFrame
 
     -- Custom Slider (Bawah)
     local SliderTrack = Instance.new("Frame")
-    SliderTrack.Size = UDim2.new(1, -20, 0, 8)
-    SliderTrack.Position = UDim2.new(0, 10, 0, 68)
+    SliderTrack.Size = UDim2.new(1, -20, 0, 6)
+    SliderTrack.Position = UDim2.new(0, 10, 0, 65)
     SliderTrack.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(1, 0)
     SliderTrack.Parent = MainFrame
@@ -221,8 +224,8 @@ return function(WindUI, AutoWalkTab)
     SliderFill.Parent = SliderTrack
 
     local SliderKnob = Instance.new("Frame")
-    SliderKnob.Size = UDim2.new(0, 16, 0, 16)
-    SliderKnob.Position = UDim2.new(1, -8, 0.5, -8)
+    SliderKnob.Size = UDim2.new(0, 14, 0, 14)
+    SliderKnob.Position = UDim2.new(1, -7, 0.5, -7)
     SliderKnob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
     Instance.new("UICorner", SliderKnob).CornerRadius = UDim.new(1, 0)
     SliderKnob.Parent = SliderFill
@@ -265,8 +268,7 @@ return function(WindUI, AutoWalkTab)
             if delta.Magnitude > 5 then hasMoved = true end
             if hasMoved then
                 WidgetBtn.Position = UDim2.new(widgetStartPos.X.Scale, widgetStartPos.X.Offset + delta.X, widgetStartPos.Y.Scale, widgetStartPos.Y.Offset + delta.Y)
-                -- Panel mengikuti tombol bulat
-                MainFrame.Position = UDim2.new(WidgetBtn.Position.X.Scale, WidgetBtn.Position.X.Offset - 70, WidgetBtn.Position.Y.Scale, WidgetBtn.Position.Y.Offset + 55)
+                MainFrame.Position = UDim2.new(WidgetBtn.Position.X.Scale, WidgetBtn.Position.X.Offset - 55, WidgetBtn.Position.Y.Scale, WidgetBtn.Position.Y.Offset + 55)
             end
         end
     end)
@@ -290,25 +292,58 @@ return function(WindUI, AutoWalkTab)
             local percent = math.clamp((mouseX - sliderX) / sliderSize, 0, 1)
             SliderFill.Size = UDim2.new(percent, 0, 1, 0)
             
-            -- Hitung speed 1x sampai 25x
             playSpeed = math.floor(1 + (percent * 24))
             SpeedLabel.Text = "Speed: " .. playSpeed .. "x"
         end
     end)
 
     -- ==========================================
-    -- LOGIKA PLAYBACK (LANGSUNG TITIK TERDEKAT)
+    -- LOGIKA FLIP & PLAYBACK
     -- ==========================================
+    FlipBtn.MouseButton1Click:Connect(function()
+        isFlipped = not isFlipped
+        if isFlipped then
+            FlipBtn.Text = "🔙 Flip"
+            FlipBtn.BackgroundColor3 = Color3.fromRGB(220, 150, 40)
+        else
+            FlipBtn.Text = "🔄 Normal"
+            FlipBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
+        end
+    end)
+
+    local function StopPlayback()
+        if playConn then playConn:Disconnect() end
+        local char = lp.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hrp then hrp.Anchored = false end
+            if hum then 
+                hum.AutoRotate = true
+                hum:Move(Vector3.zero, false) 
+                hum:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end
+        isPlaying = false
+        PlayPanelBtn.Text = "▶️ Play"
+        PlayPanelBtn.BackgroundColor3 = Color3.fromRGB(40, 130, 230)
+    end
+
     PlayPanelBtn.MouseButton1Click:Connect(function()
-        if not RouteData or isPlaying then return end
+        if not RouteData then return end
+        
+        if isPlaying then
+            StopPlayback()
+            return
+        end
         
         isPlaying = true
-        PlayPanelBtn.Text = "🔄 Proses"
+        PlayPanelBtn.Text = "⏹️ Stop"
+        PlayPanelBtn.BackgroundColor3 = Color3.fromRGB(180, 60, 60)
         
         local char = lp.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         
-        -- Cari frame terdekat, dan LANGSUNG MULAI dari sana (Tidak ada kebingungan jalan)
         local floatIndex = hrp and FindNearestFrameIndex(RouteData, hrp.Position) or 1
         
         if playConn then playConn:Disconnect() end
@@ -319,7 +354,6 @@ return function(WindUI, AutoWalkTab)
             
             if not hrp or not hum then return end
             
-            -- Biarkan physics aktif (Anchored = false) agar bisa menyentuh Checkpoint
             hrp.Anchored = false 
             hum.AutoRotate = false
             
@@ -328,13 +362,19 @@ return function(WindUI, AutoWalkTab)
             if RouteData[actualIndex] then
                 local currentData = RouteData[actualIndex]
                 
-                -- Inject CFrame dan Velocity
-                hrp.CFrame = currentData.cframe
-                hrp.AssemblyLinearVelocity = currentData.vel
+                if isFlipped then
+                    -- Balik arah hadap karakter (180 derajat Y-Axis)
+                    hrp.CFrame = currentData.cframe * CFrame.Angles(0, math.pi, 0)
+                    hrp.AssemblyLinearVelocity = -currentData.vel
+                else
+                    hrp.CFrame = currentData.cframe
+                    hrp.AssemblyLinearVelocity = currentData.vel
+                end
+                
                 if hum:GetState() ~= currentData.state then hum:ChangeState(currentData.state) end
                 
-                -- Picu animasi kaki berlari
-                local nextData = RouteData[actualIndex + 1]
+                -- Deteksi arah pergerakan agar animasi kaki lari berjalan
+                local nextData = isFlipped and RouteData[actualIndex - 1] or RouteData[actualIndex + 1]
                 if nextData then
                     local moveDir = (nextData.cframe.Position - currentData.cframe.Position)
                     local flatMoveDir = Vector3.new(moveDir.X, 0, moveDir.Z) 
@@ -344,39 +384,17 @@ return function(WindUI, AutoWalkTab)
                     hum:Move(Vector3.zero, false) 
                 end
                 
-                -- Mempercepat frame
-                floatIndex = floatIndex + playSpeed
+                -- Jika Flip, index mundur. Jika normal, index maju.
+                if isFlipped then
+                    floatIndex = floatIndex - playSpeed
+                else
+                    floatIndex = floatIndex + playSpeed
+                end
             else
-                -- SELESAI
-                if playConn then playConn:Disconnect() end
-                hum.AutoRotate = true
-                hum:Move(Vector3.zero, false) 
-                hum:ChangeState(Enum.HumanoidStateType.Running)
-                
-                isPlaying = false
-                PlayPanelBtn.Text = "▶️ Play"
-                WindUI:Notify({Title="Selesai", Content="Auto Walk mencapai tujuan!", Duration=2})
+                -- Rute Mencapai Ujung
+                StopPlayback()
             end
         end)
-    end)
-
-    StopPanelBtn.MouseButton1Click:Connect(function()
-        if not RouteData then return end 
-        
-        if playConn then playConn:Disconnect() end
-        local char = lp.Character
-        if char then
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hrp then hrp.Anchored = false end
-            if hum then 
-                hum.AutoRotate = true
-                hum:Move(Vector3.zero, false) 
-            end
-        end
-        
-        isPlaying = false
-        PlayPanelBtn.Text = "▶️ Play"
     end)
 
     -- ==========================================
@@ -392,19 +410,18 @@ return function(WindUI, AutoWalkTab)
                 
                 task.spawn(function()
                     local isLocalFound = ScanLocalCache()
-                    
                     if isLocalFound then
                         SafeSetTitle(LoadBtn, "✅ Successfully Load Asset")
-                        FloatingUI.Enabled = true -- Munculkan tombol lingkaran
-                        WindUI:Notify({Title="Sukses", Content="Rute dimuat! Tombol Auto Walk (🏃) muncul di layar.", Duration=3, Icon="check"})
+                        FloatingUI.Enabled = true 
+                        WindUI:Notify({Title="Sukses", Content="Rute dimuat! Tombol panel (🏃) muncul di layar.", Duration=3, Icon="check"})
                         return
                     end
                     
                     local isCloudFound = DirectCloudFetch()
                     if isCloudFound then
                         SafeSetTitle(LoadBtn, "✅ Successfully Load Asset")
-                        FloatingUI.Enabled = true -- Munculkan tombol lingkaran
-                        WindUI:Notify({Title="Sukses", Content="Rute diunduh & dimuat! Tombol Auto Walk (🏃) muncul di layar.", Duration=3, Icon="check"})
+                        FloatingUI.Enabled = true 
+                        WindUI:Notify({Title="Sukses", Content="Rute diunduh & dimuat! Tombol (🏃) muncul di layar.", Duration=3, Icon="check"})
                     else
                         SafeSetTitle(LoadBtn, "☁️ Load Auto Walk (Gagal)")
                         WindUI:Notify({Title="Gagal", Content="Rute untuk map ini belum ada.", Duration=3, Icon="x"})
@@ -413,5 +430,4 @@ return function(WindUI, AutoWalkTab)
             end
         })
     end)
-
 end
