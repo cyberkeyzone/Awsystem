@@ -20,17 +20,19 @@ return function(WindUI, AutoWalkTab)
     local currentPlaceId = game.PlaceId
     
     local cacheFolderName = "Recording" 
-    if isfolder and not isfolder(cacheFolderName) then 
-        pcall(function() makefolder(cacheFolderName) end) 
-    end
+    if isfolder and not isfolder(cacheFolderName) then pcall(function() makefolder(cacheFolderName) end) end
 
     local RouteData = nil
     
     local isPlaying = false
-    local isFlipped = false -- Mode putar balik
+    local isAutoWalkingToStart = false
+    local isLooping = false
+    local isReversed = false
+    local isFlipped = false
+    local isRotated = false
+    
     local playConn = nil
     local playSpeed = 1 
-
     local LoadBtn
 
     -- ==========================================
@@ -158,10 +160,10 @@ return function(WindUI, AutoWalkTab)
     WidgetStroke.Thickness = 2
     WidgetStroke.Parent = WidgetBtn
 
-    -- 2. Main Panel (Diperkecil)
+    -- 2. Main Panel (Desain Compact 2x2 Grid + Slider)
     local MainFrame = Instance.new("Frame")
-    MainFrame.Size = UDim2.new(0, 150, 0, 85) -- Panel lebih kecil
-    MainFrame.Position = UDim2.new(0.5, -75, 0.1, 55)
+    MainFrame.Size = UDim2.new(0, 160, 0, 105) 
+    MainFrame.Position = UDim2.new(0.5, -80, 0.1, 55)
     MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
     MainFrame.BorderSizePixel = 0
     MainFrame.Visible = false 
@@ -173,34 +175,34 @@ return function(WindUI, AutoWalkTab)
     UIStroke.Thickness = 1.5
     UIStroke.Parent = MainFrame
 
-    -- Tombol Play/Stop (Toggle) Kiri
-    local PlayPanelBtn = Instance.new("TextButton")
-    PlayPanelBtn.Size = UDim2.new(0, 60, 0, 28)
-    PlayPanelBtn.Position = UDim2.new(0, 10, 0, 10)
+    local function CreateMiniBtn(txt, px, py, parent)
+        local btn = Instance.new("TextButton")
+        btn.Size = UDim2.new(0, 72, 0, 25)
+        btn.Position = UDim2.new(0, px, 0, py)
+        btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
+        btn.Text = txt
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamBold
+        btn.TextSize = 11
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+        btn.Parent = parent
+        return btn
+    end
+
+    -- Baris 1: Play/Stop & Reverse
+    local PlayPanelBtn = CreateMiniBtn("▶️ Play", 5, 5, MainFrame)
     PlayPanelBtn.BackgroundColor3 = Color3.fromRGB(40, 130, 230)
-    PlayPanelBtn.Text = "▶️ Play"
-    PlayPanelBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    PlayPanelBtn.Font = Enum.Font.GothamBold
-    PlayPanelBtn.TextSize = 11
-    Instance.new("UICorner", PlayPanelBtn).CornerRadius = UDim.new(0, 6)
-    PlayPanelBtn.Parent = MainFrame
+    
+    local ReverseBtn = CreateMiniBtn("🔙 Rev: OFF", 82, 5, MainFrame)
 
-    -- Tombol Flip (Kanan)
-    local FlipBtn = Instance.new("TextButton")
-    FlipBtn.Size = UDim2.new(0, 60, 0, 28)
-    FlipBtn.Position = UDim2.new(1, -70, 0, 10)
-    FlipBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
-    FlipBtn.Text = "🔄 Normal"
-    FlipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    FlipBtn.Font = Enum.Font.GothamBold
-    FlipBtn.TextSize = 11
-    Instance.new("UICorner", FlipBtn).CornerRadius = UDim.new(0, 6)
-    FlipBtn.Parent = MainFrame
+    -- Baris 2: Flip & Rotate
+    local FlipBtn = CreateMiniBtn("🔀 Flip: OFF", 5, 35, MainFrame)
+    local RotateBtn = CreateMiniBtn("🌀 Rot: OFF", 82, 35, MainFrame)
 
-    -- Info Speed
+    -- Baris 3: Slider Speed
     local SpeedLabel = Instance.new("TextLabel")
-    SpeedLabel.Size = UDim2.new(1, -20, 0, 15)
-    SpeedLabel.Position = UDim2.new(0, 10, 0, 45)
+    SpeedLabel.Size = UDim2.new(1, -10, 0, 15)
+    SpeedLabel.Position = UDim2.new(0, 5, 0, 65)
     SpeedLabel.BackgroundTransparency = 1
     SpeedLabel.Text = "Speed: 1x"
     SpeedLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
@@ -209,10 +211,9 @@ return function(WindUI, AutoWalkTab)
     SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
     SpeedLabel.Parent = MainFrame
 
-    -- Custom Slider (Bawah)
     local SliderTrack = Instance.new("Frame")
-    SliderTrack.Size = UDim2.new(1, -20, 0, 6)
-    SliderTrack.Position = UDim2.new(0, 10, 0, 65)
+    SliderTrack.Size = UDim2.new(1, -14, 0, 6)
+    SliderTrack.Position = UDim2.new(0, 7, 0, 85)
     SliderTrack.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     Instance.new("UICorner", SliderTrack).CornerRadius = UDim.new(1, 0)
     SliderTrack.Parent = MainFrame
@@ -238,7 +239,7 @@ return function(WindUI, AutoWalkTab)
     SliderTouchBtn.Parent = SliderTrack
 
     -- ==========================================
-    -- LOGIKA DRAG UI & TOGGLE
+    -- LOGIKA DRAG WIDGET
     -- ==========================================
     local isDraggingWidget = false
     local widgetDragStart, widgetStartPos
@@ -256,9 +257,7 @@ return function(WindUI, AutoWalkTab)
     WidgetBtn.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isDraggingWidget = false
-            if not hasMoved then
-                MainFrame.Visible = not MainFrame.Visible
-            end
+            if not hasMoved then MainFrame.Visible = not MainFrame.Visible end
         end
     end)
 
@@ -268,13 +267,13 @@ return function(WindUI, AutoWalkTab)
             if delta.Magnitude > 5 then hasMoved = true end
             if hasMoved then
                 WidgetBtn.Position = UDim2.new(widgetStartPos.X.Scale, widgetStartPos.X.Offset + delta.X, widgetStartPos.Y.Scale, widgetStartPos.Y.Offset + delta.Y)
-                MainFrame.Position = UDim2.new(WidgetBtn.Position.X.Scale, WidgetBtn.Position.X.Offset - 55, WidgetBtn.Position.Y.Scale, WidgetBtn.Position.Y.Offset + 55)
+                MainFrame.Position = UDim2.new(WidgetBtn.Position.X.Scale, WidgetBtn.Position.X.Offset - 60, WidgetBtn.Position.Y.Scale, WidgetBtn.Position.Y.Offset + 55)
             end
         end
     end)
 
     -- ==========================================
-    -- LOGIKA SLIDER CUSTOM
+    -- LOGIKA SLIDER
     -- ==========================================
     local sliderDragging = false
     SliderTouchBtn.InputBegan:Connect(function(input)
@@ -298,19 +297,36 @@ return function(WindUI, AutoWalkTab)
     end)
 
     -- ==========================================
-    -- LOGIKA FLIP & PLAYBACK
+    -- LOGIKA FITUR (REVERSE, FLIP, ROTATE)
     -- ==========================================
-    FlipBtn.MouseButton1Click:Connect(function()
-        isFlipped = not isFlipped
-        if isFlipped then
-            FlipBtn.Text = "🔙 Flip"
-            FlipBtn.BackgroundColor3 = Color3.fromRGB(220, 150, 40)
+    local function UpdateBtnState(btn, state, activeTxt, inactiveTxt)
+        if state then
+            btn.Text = activeTxt
+            btn.BackgroundColor3 = Color3.fromRGB(220, 150, 40)
         else
-            FlipBtn.Text = "🔄 Normal"
-            FlipBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
+            btn.Text = inactiveTxt
+            btn.BackgroundColor3 = Color3.fromRGB(60, 60, 70)
         end
+    end
+
+    ReverseBtn.MouseButton1Click:Connect(function()
+        isReversed = not isReversed
+        UpdateBtnState(ReverseBtn, isReversed, "🔙 Rev: ON", "🔙 Rev: OFF")
     end)
 
+    FlipBtn.MouseButton1Click:Connect(function()
+        isFlipped = not isFlipped
+        UpdateBtnState(FlipBtn, isFlipped, "🔀 Flip: ON", "🔀 Flip: OFF")
+    end)
+
+    RotateBtn.MouseButton1Click:Connect(function()
+        isRotated = not isRotated
+        UpdateBtnState(RotateBtn, isRotated, "🌀 Rot: ON", "🌀 Rot: OFF")
+    end)
+
+    -- ==========================================
+    -- LOGIKA PLAYBACK (AUTO WALK)
+    -- ==========================================
     local function StopPlayback()
         if playConn then playConn:Disconnect() end
         local char = lp.Character
@@ -325,6 +341,7 @@ return function(WindUI, AutoWalkTab)
             end
         end
         isPlaying = false
+        isAutoWalkingToStart = false
         PlayPanelBtn.Text = "▶️ Play"
         PlayPanelBtn.BackgroundColor3 = Color3.fromRGB(40, 130, 230)
     end
@@ -344,7 +361,9 @@ return function(WindUI, AutoWalkTab)
         local char = lp.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
         
+        -- Cari posisi terdekat, dan Aktifkan mode AutoWalkToStart
         local floatIndex = hrp and FindNearestFrameIndex(RouteData, hrp.Position) or 1
+        isAutoWalkingToStart = true 
         
         if playConn then playConn:Disconnect() end
         playConn = RunService.Stepped:Connect(function()
@@ -354,52 +373,96 @@ return function(WindUI, AutoWalkTab)
             
             if not hrp or not hum then return end
             
-            hrp.Anchored = false 
-            hum.AutoRotate = false
-            
-            local actualIndex = math.floor(floatIndex)
-            
-            if RouteData[actualIndex] then
-                local currentData = RouteData[actualIndex]
+            if isAutoWalkingToStart then
+                -- BERJALAN NORMAL KE TITIK TERDEKAT (BUKAN TELEPORT)
+                hrp.Anchored = false
+                hum.AutoRotate = true
+
+                local targetPos = RouteData[math.floor(floatIndex)].cframe.Position
+                local dist = (hrp.Position - targetPos).Magnitude
                 
-                if isFlipped then
-                    -- Balik arah hadap karakter (180 derajat Y-Axis)
-                    hrp.CFrame = currentData.cframe * CFrame.Angles(0, math.pi, 0)
-                    hrp.AssemblyLinearVelocity = -currentData.vel
+                if dist > 3 then
+                    hum:MoveTo(targetPos)
                 else
-                    hrp.CFrame = currentData.cframe
-                    hrp.AssemblyLinearVelocity = currentData.vel
-                end
-                
-                if hum:GetState() ~= currentData.state then hum:ChangeState(currentData.state) end
-                
-                -- Deteksi arah pergerakan agar animasi kaki lari berjalan
-                local nextData = isFlipped and RouteData[actualIndex - 1] or RouteData[actualIndex + 1]
-                if nextData then
-                    local moveDir = (nextData.cframe.Position - currentData.cframe.Position)
-                    local flatMoveDir = Vector3.new(moveDir.X, 0, moveDir.Z) 
-                    if flatMoveDir.Magnitude > 0.02 then hum:Move(flatMoveDir.Unit, false) 
-                    else hum:Move(Vector3.zero, false) end
-                else 
-                    hum:Move(Vector3.zero, false) 
-                end
-                
-                -- Jika Flip, index mundur. Jika normal, index maju.
-                if isFlipped then
-                    floatIndex = floatIndex - playSpeed
-                else
-                    floatIndex = floatIndex + playSpeed
+                    isAutoWalkingToStart = false 
                 end
             else
-                -- Rute Mencapai Ujung
-                StopPlayback()
+                -- PLAYBACK RUTE (Bisa menabrak Checkpoint)
+                hrp.Anchored = false 
+                hum.AutoRotate = false
+                
+                local actualIndex = math.floor(floatIndex)
+                
+                if RouteData[actualIndex] then
+                    local currentData = RouteData[actualIndex]
+                    local targetCFrame = currentData.cframe
+                    local targetVel = currentData.vel
+
+                    -- Kombinasi Fitur
+                    if isReversed then
+                        targetCFrame = targetCFrame * CFrame.Angles(0, math.pi, 0)
+                        targetVel = -targetVel
+                    end
+
+                    if isFlipped then
+                        -- Putar 180 drajat
+                        targetCFrame = targetCFrame * CFrame.Angles(0, math.pi, 0)
+                    end
+
+                    if isRotated then
+                        -- Gasing
+                        targetCFrame = targetCFrame * CFrame.Angles(0, os.clock() * 15, 0)
+                    end
+                    
+                    hrp.CFrame = targetCFrame
+                    hrp.AssemblyLinearVelocity = targetVel
+                    if hum:GetState() ~= currentData.state then hum:ChangeState(currentData.state) end
+                    
+                    -- Deteksi gerak untuk pemicu animasi jalan bawaan roblox
+                    local nextIndex = isReversed and (actualIndex - 1) or (actualIndex + 1)
+                    local nextData = RouteData[nextIndex]
+                    if nextData then
+                        local moveDir = (nextData.cframe.Position - currentData.cframe.Position)
+                        local flatMoveDir = Vector3.new(moveDir.X, 0, moveDir.Z) 
+                        if flatMoveDir.Magnitude > 0.02 then hum:Move(flatMoveDir.Unit, false) 
+                        else hum:Move(Vector3.zero, false) end
+                    else 
+                        hum:Move(Vector3.zero, false) 
+                    end
+                    
+                    if isReversed then
+                        floatIndex = floatIndex - playSpeed
+                    else
+                        floatIndex = floatIndex + playSpeed
+                    end
+                else
+                    -- RUTE SELESAI
+                    if isLooping then
+                        -- Reset index & jalan lagi ke awal
+                        floatIndex = isReversed and #RouteData or 1
+                        isAutoWalkingToStart = true
+                    else
+                        StopPlayback()
+                        WindUI:Notify({Title="Selesai", Content="Rute Auto Walk tercapai!", Duration=2})
+                    end
+                end
             end
         end)
     end)
 
     -- ==========================================
-    -- TAB WIND UI (SANGAT BERSIH & MINIMALIS)
+    -- TAB WIND UI (HANYA TOMBOL LOAD & LOOP)
     -- ==========================================
+    pcall(function()
+        AutoWalkTab:Toggle({
+            Title = "🔁 Loop Auto Walk",
+            Default = false,
+            Callback = function(state)
+                isLooping = state
+            end
+        })
+    end)
+
     pcall(function()
         LoadBtn = AutoWalkTab:Button({
             Title = "☁️ Load Auto Walk",
@@ -413,7 +476,7 @@ return function(WindUI, AutoWalkTab)
                     if isLocalFound then
                         SafeSetTitle(LoadBtn, "✅ Successfully Load Asset")
                         FloatingUI.Enabled = true 
-                        WindUI:Notify({Title="Sukses", Content="Rute dimuat! Tombol panel (🏃) muncul di layar.", Duration=3, Icon="check"})
+                        WindUI:Notify({Title="Sukses", Content="Rute dimuat! Panel (🏃) muncul.", Duration=3, Icon="check"})
                         return
                     end
                     
@@ -421,10 +484,10 @@ return function(WindUI, AutoWalkTab)
                     if isCloudFound then
                         SafeSetTitle(LoadBtn, "✅ Successfully Load Asset")
                         FloatingUI.Enabled = true 
-                        WindUI:Notify({Title="Sukses", Content="Rute diunduh & dimuat! Tombol (🏃) muncul di layar.", Duration=3, Icon="check"})
+                        WindUI:Notify({Title="Sukses", Content="Rute diunduh & dimuat!", Duration=3, Icon="check"})
                     else
-                        SafeSetTitle(LoadBtn, "☁️ Load Auto Walk (Gagal)")
-                        WindUI:Notify({Title="Gagal", Content="Rute untuk map ini belum ada.", Duration=3, Icon="x"})
+                        SafeSetTitle(LoadBtn, "☁️ Load Auto Walk")
+                        WindUI:Notify({Title="Gagal", Content="Rute belum ada.", Duration=3, Icon="x"})
                     end
                 end)
             end
