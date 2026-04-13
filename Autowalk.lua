@@ -90,7 +90,7 @@ return function(WindUI, AutoWalkTab)
                             if desSuccess and resultData and #resultData > 0 then
                                 RouteData = resultData
                                 loadedRouteName = fileName
-                                return true, "Rute Lokal: " .. fileName
+                                return true, "Dimuat instan dari Local Cache (" .. fileName .. ")"
                             end
                         end
                     end
@@ -124,7 +124,7 @@ return function(WindUI, AutoWalkTab)
             end
         end
 
-        -- PRIORITAS 2: Coba file bernama "record.json" (Fallback manual)
+        -- PRIORITAS 2: Coba file bernama "record.json" (Fallback)
         local url2 = baseUrl .. "/record.json"
         local s2, r2 = pcall(function() return game:HttpGet(url2) end)
         
@@ -132,7 +132,7 @@ return function(WindUI, AutoWalkTab)
             local js, jd = pcall(function() return HttpService:JSONDecode(r2) end)
             if js and type(jd) == "table" then
                 if jd.PlaceId and tostring(jd.PlaceId) ~= tostring(currentPlaceId) then
-                    return false, "File record.json ada di GitHub, tapi Place ID beda!"
+                    return false, "File record.json ada di GitHub, tapi untuk Map yang berbeda!"
                 end
                 
                 local framesToProcess = jd.Frames or jd
@@ -146,163 +146,168 @@ return function(WindUI, AutoWalkTab)
             end
         end
 
-        return false, "Rute belum tersedia di GitHub."
+        return false, "Rute untuk Map ini belum ada di GitHub."
     end
 
     -- ==========================================
-    -- UI ELEMENTS (WIND UI)
+    -- UI ELEMENTS (DIBUNGKUS PCALL AGAR ANTI-CRASH)
     -- ==========================================
-    StatusPara = AutoWalkTab:Paragraph({
-        Title = "Auto Walk (Smart Tracker)",
-        Desc = "Status: Menunggu Load... (Map ID: " .. tostring(currentPlaceId) .. ")",
-        Color = Color3.fromHex("#0F7BFF")
-    })
+    pcall(function()
+        StatusPara = AutoWalkTab:Paragraph({
+            Title = "Auto Walk (Smart Tracker)",
+            Desc = "Status: Menunggu Load... (Map ID: " .. tostring(currentPlaceId) .. ")",
+            Color = Color3.fromHex("#0F7BFF")
+        })
+    end)
 
-    -- Slider Speed (Aman dari crash)
-    AutoWalkTab:Slider({
-        Title = "⚡ Playspeed Auto Walk",
-        Min = 1, 
-        Max = 25, 
-        Default = 1,
-        Value = 1,
-        Callback = function(value)
-            playSpeed = value
-            if isPlaying then
-                StatusPara:SetDesc(string.format("Status: Berjalan (Speed: %dx)", playSpeed))
-            end
-        end
-    })
-
-    -- 1. TOMBOL LOAD (Pencarian Cerdas Anti-Stuck)
-    LoadBtn = AutoWalkTab:Button({
-        Title = "☁️ Load Auto Walk",
-        Callback = function()
-            if not isUnlocked then return WindUI:Notify({Title="Terkunci", Content="Akses ditolak."}) end
-            
-            SafeSetTitle(LoadBtn, "⏳ Menarik Data...")
-            StatusPara:SetDesc("Status: Memeriksa Local & Cloud...")
-            
-            task.spawn(function()
-                -- Cek Cache Lokal terlebih dahulu
-                local isLocalFound, localMsg = ScanLocalCache()
-                if isLocalFound then
-                    WindUI:Notify({Title="Rute Terpasang", Content=localMsg, Duration=2, Icon="check"})
-                    StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")")
-                    SafeSetTitle(LoadBtn, "✅ Rute Ter-Load (" .. loadedRouteName .. ")")
-                    SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
-                    SafeSetTitle(StopBtn, "⏹️ Stop Auto Walk")
-                    return
+    pcall(function()
+        AutoWalkTab:Slider({
+            Title = "⚡ Playspeed Auto Walk",
+            Min = 1, 
+            Max = 25, 
+            Value = 1,
+            Callback = function(value)
+                playSpeed = value
+                if isPlaying and StatusPara then
+                    pcall(function() StatusPara:SetDesc(string.format("Status: Berjalan (Speed: %dx)", playSpeed)) end)
                 end
-                
-                -- Jika tidak ada di Lokal, tembak ke URL GitHub
-                local isCloudFound, cloudMsg = DirectCloudFetch()
-                if isCloudFound then
-                    WindUI:Notify({Title="Rute Terunduh", Content=cloudMsg, Duration=2, Icon="check"})
-                    StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")")
-                    SafeSetTitle(LoadBtn, "✅ Rute Ter-Load (" .. loadedRouteName .. ")")
-                    SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
-                    SafeSetTitle(StopBtn, "⏹️ Stop Auto Walk")
-                else
-                    WindUI:Notify({Title="Tidak Ditemukan", Content=cloudMsg, Duration=3, Icon="x"})
-                    StatusPara:SetDesc("Status: Gagal. " .. cloudMsg)
-                    SafeSetTitle(LoadBtn, "☁️ Load Auto Walk (Coba Lagi)")
-                end
-            end)
-        end
-    })
-
-    -- 2. TOMBOL PLAY (Mode Terkunci di Awal)
-    PlayBtn = AutoWalkTab:Button({
-        Title = "🚫 Play (Terkunci)",
-        Callback = function()
-            if not isUnlocked or isPlaying or not RouteData then 
-                if not RouteData then WindUI:Notify({Title="Gagal", Content="Load Rute terlebih dahulu!", Duration=2}) end
-                return 
             end
-            
-            isPlaying = true
-            SafeSetTitle(PlayBtn, "🔄 Sedang Berjalan...")
-            
-            local char = lp.Character
-            local hrp = char and char:FindFirstChild("HumanoidRootPart")
-            
-            -- Loncati Frame: Mulai dari titik terdekat
-            local floatIndex = hrp and FindNearestFrameIndex(RouteData, hrp.Position) or 1
-            
-            WindUI:Notify({Title="Auto Walk", Content="Melanjutkan dari posisi terdekat!", Duration=2})
-            StatusPara:SetDesc(string.format("Status: Berjalan (%dx Speed)", playSpeed))
-            
-            if playConn then playConn:Disconnect() end
-            playConn = RunService.Stepped:Connect(function()
-                local char = lp.Character
-                local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
+        })
+    end)
+
+    -- 1. TOMBOL LOAD
+    pcall(function()
+        LoadBtn = AutoWalkTab:Button({
+            Title = "☁️ Load Auto Walk",
+            Callback = function()
+                if not isUnlocked then return WindUI:Notify({Title="Terkunci", Content="Akses ditolak."}) end
                 
-                if not hrp or not hum then return end
+                SafeSetTitle(LoadBtn, "⏳ Sedang Menarik Data...")
+                if StatusPara then pcall(function() StatusPara:SetDesc("Status: Memeriksa Local & Cloud...") end) end
                 
-                hrp.Anchored = true 
-                hum.AutoRotate = false
-                
-                local actualIndex = math.floor(floatIndex)
-                
-                if RouteData[actualIndex] then
-                    local currentData = RouteData[actualIndex]
-                    
-                    hrp.CFrame = currentData.cframe
-                    hrp.AssemblyLinearVelocity = currentData.vel
-                    if hum:GetState() ~= currentData.state then hum:ChangeState(currentData.state) end
-                    
-                    local nextData = RouteData[actualIndex + 1]
-                    if nextData then
-                        local moveDir = (nextData.cframe.Position - currentData.cframe.Position)
-                        local flatMoveDir = Vector3.new(moveDir.X, 0, moveDir.Z) 
-                        if flatMoveDir.Magnitude > 0.02 then hum:Move(flatMoveDir.Unit, false) 
-                        else hum:Move(Vector3.zero, false) end
-                    else 
-                        hum:Move(Vector3.zero, false) 
+                task.spawn(function()
+                    local isLocalFound, localMsg = ScanLocalCache()
+                    if isLocalFound then
+                        WindUI:Notify({Title="Rute Ditemukan", Content=localMsg, Duration=2, Icon="check"})
+                        if StatusPara then pcall(function() StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")\nKlik tombol Play di bawah.") end) end
+                        SafeSetTitle(LoadBtn, "✅ Rute Ter-Load (" .. loadedRouteName .. ")")
+                        SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
+                        SafeSetTitle(StopBtn, "⏹️ Stop Auto Walk")
+                        return
                     end
                     
-                    floatIndex = floatIndex + playSpeed
-                else
-                    if playConn then playConn:Disconnect() end
-                    hrp.Anchored = false
-                    hum.AutoRotate = true
-                    hum:Move(Vector3.zero, false) 
-                    hum:ChangeState(Enum.HumanoidStateType.Running)
-                    hrp.AssemblyLinearVelocity = Vector3.zero
-                    
-                    isPlaying = false
-                    StatusPara:SetDesc("Status: Tujuan Tercapai.")
-                    WindUI:Notify({Title="Selesai", Content="Rute Auto Walk tercapai!", Duration=2})
-                    SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
-                end
-            end)
-        end
-    })
-
-    -- 3. TOMBOL STOP (Mode Terkunci di Awal)
-    StopBtn = AutoWalkTab:Button({
-        Title = "🚫 Stop (Terkunci)",
-        Callback = function()
-            if not RouteData then return end 
-            
-            if playConn then playConn:Disconnect() end
-            local char = lp.Character
-            if char then
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hrp then hrp.Anchored = false end
-                if hum then 
-                    hum.AutoRotate = true
-                    hum:Move(Vector3.zero, false) 
-                end
+                    local isCloudFound, cloudMsg = DirectCloudFetch()
+                    if isCloudFound then
+                        WindUI:Notify({Title="Rute Terunduh", Content=cloudMsg, Duration=2, Icon="check"})
+                        if StatusPara then pcall(function() StatusPara:SetDesc("Status: Siap! (" .. loadedRouteName .. ")\nKlik tombol Play di bawah.") end) end
+                        SafeSetTitle(LoadBtn, "✅ Rute Ter-Load (" .. loadedRouteName .. ")")
+                        SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
+                        SafeSetTitle(StopBtn, "⏹️ Stop Auto Walk")
+                    else
+                        WindUI:Notify({Title="Tidak Ditemukan", Content=cloudMsg, Duration=3, Icon="x"})
+                        if StatusPara then pcall(function() StatusPara:SetDesc("Status: Gagal. " .. cloudMsg) end) end
+                        SafeSetTitle(LoadBtn, "☁️ Load Auto Walk (Coba Lagi)")
+                    end
+                end)
             end
-            
-            isPlaying = false
-            StatusPara:SetDesc("Status: Dihentikan (Standby).")
-            WindUI:Notify({Title="Stop", Content="Auto Walk dihentikan.", Duration=1.5})
-            SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
-        end
-    })
+        })
+    end)
+
+    -- 2. TOMBOL PLAY
+    pcall(function()
+        PlayBtn = AutoWalkTab:Button({
+            Title = "🚫 Play (Terkunci - Load Dulu)",
+            Callback = function()
+                if not isUnlocked or isPlaying or not RouteData then 
+                    if not RouteData then WindUI:Notify({Title="Gagal", Content="Silakan klik Load Auto Walk dulu!", Duration=2}) end
+                    return 
+                end
+                
+                isPlaying = true
+                SafeSetTitle(PlayBtn, "🔄 Sedang Berjalan...")
+                
+                local char = lp.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                
+                local floatIndex = hrp and FindNearestFrameIndex(RouteData, hrp.Position) or 1
+                
+                WindUI:Notify({Title="Auto Walk", Content="Melanjutkan dari posisi terdekat!", Duration=2})
+                if StatusPara then pcall(function() StatusPara:SetDesc(string.format("Status: Berjalan (%dx Speed)", playSpeed)) end) end
+                
+                if playConn then playConn:Disconnect() end
+                playConn = RunService.Stepped:Connect(function()
+                    local char = lp.Character
+                    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                    local hum = char and char:FindFirstChildOfClass("Humanoid")
+                    
+                    if not hrp or not hum then return end
+                    
+                    hrp.Anchored = true 
+                    hum.AutoRotate = false
+                    
+                    local actualIndex = math.floor(floatIndex)
+                    
+                    if RouteData[actualIndex] then
+                        local currentData = RouteData[actualIndex]
+                        
+                        hrp.CFrame = currentData.cframe
+                        hrp.AssemblyLinearVelocity = currentData.vel
+                        if hum:GetState() ~= currentData.state then hum:ChangeState(currentData.state) end
+                        
+                        local nextData = RouteData[actualIndex + 1]
+                        if nextData then
+                            local moveDir = (nextData.cframe.Position - currentData.cframe.Position)
+                            local flatMoveDir = Vector3.new(moveDir.X, 0, moveDir.Z) 
+                            if flatMoveDir.Magnitude > 0.02 then hum:Move(flatMoveDir.Unit, false) 
+                            else hum:Move(Vector3.zero, false) end
+                        else 
+                            hum:Move(Vector3.zero, false) 
+                        end
+                        
+                        floatIndex = floatIndex + playSpeed
+                    else
+                        if playConn then playConn:Disconnect() end
+                        hrp.Anchored = false
+                        hum.AutoRotate = true
+                        hum:Move(Vector3.zero, false) 
+                        hum:ChangeState(Enum.HumanoidStateType.Running)
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        
+                        isPlaying = false
+                        if StatusPara then pcall(function() StatusPara:SetDesc("Status: Tujuan Tercapai.") end) end
+                        WindUI:Notify({Title="Selesai", Content="Rute Auto Walk tercapai!", Duration=2})
+                        SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
+                    end
+                end)
+            end
+        })
+    end)
+
+    -- 3. TOMBOL STOP
+    pcall(function()
+        StopBtn = AutoWalkTab:Button({
+            Title = "🚫 Stop (Terkunci)",
+            Callback = function()
+                if not RouteData then return end 
+                
+                if playConn then playConn:Disconnect() end
+                local char = lp.Character
+                if char then
+                    local hrp = char:FindFirstChild("HumanoidRootPart")
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hrp then hrp.Anchored = false end
+                    if hum then 
+                        hum.AutoRotate = true
+                        hum:Move(Vector3.zero, false) 
+                    end
+                end
+                
+                isPlaying = false
+                if StatusPara then pcall(function() StatusPara:SetDesc("Status: Dihentikan (Standby).") end) end
+                WindUI:Notify({Title="Stop", Content="Auto Walk dihentikan.", Duration=1.5})
+                SafeSetTitle(PlayBtn, "▶️ Play Auto Walk")
+            end
+        })
+    end)
 
 end
