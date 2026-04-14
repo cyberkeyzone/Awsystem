@@ -48,7 +48,7 @@ return function(WindUI, TebakKataTab)
     local typingDelay = 0.05 
 
     -- ==========================================
-    -- FUNGSI GAIB: KLIK UI KEYBOARD V2 (FORCE CLICK)
+    -- FUNGSI GAIB: KLIK UI KEYBOARD V3 (CLEAN & FORCE)
     -- ==========================================
     local function clickUIButton(targetText)
         local pg = lp:FindFirstChild("PlayerGui")
@@ -60,17 +60,21 @@ return function(WindUI, TebakKataTab)
         for _, gui in ipairs(pg:GetDescendants()) do
             if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible then
                 local text = gui:IsA("TextButton") and gui.Text or gui.Name
+                -- Bersihkan dari tag RichText (contoh: <b>A</b> menjadi A)
+                text = string.gsub(text, "<[^>]+>", "")
+                -- Hilangkan spasi
                 text = string.upper(string.gsub(text, "%s+", "")) 
                 
                 local isMatch = false
+                -- Jika mencari 1 huruf (Ketik Keyboard A-Z)
                 if string.len(tTarget) == 1 then
                     if text == tTarget then isMatch = true end
                 else
+                    -- Jika mencari kata (Masuk / Enter)
                     if text == tTarget or string.match(text, tTarget) then isMatch = true end
                 end
 
                 if isMatch then
-                    -- Metode 1: Standard firesignal
                     local fSignal = getgenv().firesignal or firesignal
                     if typeof(fSignal) == "function" then
                         pcall(function() fSignal(gui.MouseButton1Click) end)
@@ -79,7 +83,6 @@ return function(WindUI, TebakKataTab)
                         clicked = true
                     end
                     
-                    -- Metode 2: Eksekusi getconnections (Fallback ampuh untuk mobile executor)
                     if not clicked and typeof(getconnections) == "function" then
                         pcall(function()
                             for _, conn in pairs(getconnections(gui.MouseButton1Click)) do conn:Fire() end
@@ -88,7 +91,6 @@ return function(WindUI, TebakKataTab)
                         clicked = true
                     end
                     
-                    -- Hentikan pencarian jika tombol sudah ketemu & diklik
                     if clicked then return true end
                 end
             end
@@ -107,7 +109,7 @@ return function(WindUI, TebakKataTab)
             local char = string.sub(wordUpper, i, i)
             local clicked = clickUIButton(char)
             
-            -- Fallback Keyboard Asli Roblox
+            -- Fallback Keyboard Asli
             if not clicked then
                 local vim = game:GetService("VirtualInputManager")
                 local keycode = Enum.KeyCode[char]
@@ -120,7 +122,7 @@ return function(WindUI, TebakKataTab)
             task.wait(typingDelay)
         end
         
-        -- Cari dan klik tombol ENTER atau MASUK
+        -- Cari dan klik tombol MASUK (ENTER)
         local enterClicked = clickUIButton("MASUK") or clickUIButton("ENTER") or clickUIButton("SUBMIT") or clickUIButton("JAWAB")
         
         if not enterClicked then
@@ -135,7 +137,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER V2: ANTI GAGAL BACA
+    -- FUNGSI SCANNER: MENCARI SOAL & ANTI DUPLIKAT
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
@@ -143,15 +145,12 @@ return function(WindUI, TebakKataTab)
         
         for _, gui in ipairs(pg:GetDescendants()) do
             if gui:IsA("TextLabel") and gui.Visible then
-                -- Bersihkan teks dari RichText (seperti <b> </b>)
                 local cleanText = string.gsub(gui.Text, "<[^>]+>", "")
                 local textUpper = string.upper(cleanText)
                 
-                -- Pola 1: Berdasarkan screenshot kamu
                 local prompt = string.match(textUpper, "HURUFNYA ADALAH:%s*([A-Z]+)")
                 if prompt then return prompt end
                 
-                -- Pola 2: Teks melayang di tengah layar (Fallback)
                 if string.match(textUpper, "^[A-Z]+$") and string.len(textUpper) >= 1 and string.len(textUpper) <= 4 then
                     if gui.TextSize > 40 or gui.AbsoluteSize.Y > 40 then
                         return textUpper
@@ -191,7 +190,6 @@ return function(WindUI, TebakKataTab)
                 ScanOpponentWords()
                 local currentPrompt = GetCurrentPrompt()
                 
-                -- DEBUG: Beri tahu pengguna jika bot melihat soal baru
                 if currentPrompt and currentPrompt ~= "" and currentPrompt ~= lastPrompt then
                     WindUI:Notify({Title="Bot Mendeteksi", Content="Soal ditemukan: " .. currentPrompt, Duration=1})
                     
@@ -211,7 +209,7 @@ return function(WindUI, TebakKataTab)
                         task.wait(2.0) 
                     else
                         WindUI:Notify({Title="Bot Bingung", Content="Tidak ada kata tersisa di memori untuk: " .. currentPrompt, Duration=2})
-                        lastPrompt = currentPrompt -- Mencegah spam error
+                        lastPrompt = currentPrompt 
                     end
                 end
                 task.wait(0.2) 
@@ -252,16 +250,19 @@ return function(WindUI, TebakKataTab)
         end
     })
 
-    -- FIX ERROR SLIDER: Harus menggunakan Default, Value, dan Step
-    TebakKataTab:Slider({
+    -- [!] BUG FIX: MENGGANTI SLIDER DENGAN DROPDOWN AGAR 100% TIDAK CRASH DI EXECUTOR
+    TebakKataTab:Dropdown({
         Title = "Kecepatan Ngetik Bot",
-        Step = 1,     -- PENAMBAHAN WAJIB AGAR TIDAK ERROR (arithmetic sub on nil)
-        Min = 1,
-        Max = 10,
-        Value = 5,    
-        Default = 5,  
-        Callback = function(value)
-            typingDelay = 0.1 - (value * 0.009)
+        Values = {"Sangat Lambat", "Lambat", "Normal", "Cepat", "Super Cepat"},
+        Value = "Normal",
+        Callback = function(opt)
+            local choice = type(opt) == "table" and opt.Title or opt
+            if choice == "Sangat Lambat" then typingDelay = 0.1
+            elseif choice == "Lambat" then typingDelay = 0.08
+            elseif choice == "Normal" then typingDelay = 0.05
+            elseif choice == "Cepat" then typingDelay = 0.02
+            elseif choice == "Super Cepat" then typingDelay = 0.005
+            end
         end
     })
     
