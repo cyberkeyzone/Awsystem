@@ -33,7 +33,7 @@ return function(WindUI, TebakKataTab)
         XENON XILOFON
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA
-        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT
+        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT
     ]=]
 
     local Dictionary = {}
@@ -48,50 +48,76 @@ return function(WindUI, TebakKataTab)
     local typingDelay = 0.05 
 
     -- ==========================================
-    -- FUNGSI GAIB: KLIK UI KEYBOARD V3 (CLEAN & FORCE)
+    -- FUNGSI GAIB: KLIK UI KEYBOARD V4 (SCREEN TAP)
     -- ==========================================
     local function clickUIButton(targetText)
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
         
         local tTarget = string.upper(targetText)
-        local clicked = false
 
         for _, gui in ipairs(pg:GetDescendants()) do
             if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible then
-                local text = gui:IsA("TextButton") and gui.Text or gui.Name
-                -- Bersihkan dari tag RichText (contoh: <b>A</b> menjadi A)
+                
+                -- Sistem pencarian teks berlapis (Anti-Ngumpet)
+                local text = ""
+                if gui:IsA("TextButton") then text = gui.Text end
+                if text == "" or string.match(text, "^%s*$") then
+                    local lbl = gui:FindFirstChildOfClass("TextLabel")
+                    if lbl then text = lbl.Text end
+                end
+                if text == "" or string.match(text, "^%s*$") then
+                    text = gui.Name
+                end
+                
+                -- Bersihkan teks dari RichText & Spasi
                 text = string.gsub(text, "<[^>]+>", "")
-                -- Hilangkan spasi
                 text = string.upper(string.gsub(text, "%s+", "")) 
                 
                 local isMatch = false
-                -- Jika mencari 1 huruf (Ketik Keyboard A-Z)
                 if string.len(tTarget) == 1 then
                     if text == tTarget then isMatch = true end
                 else
-                    -- Jika mencari kata (Masuk / Enter)
                     if text == tTarget or string.match(text, tTarget) then isMatch = true end
                 end
 
                 if isMatch then
+                    -- METODE 1: SCREEN TAP (VirtualInputManager) - Paling ampuh di Eksekutor Mobile
+                    pcall(function()
+                        local vim = game:GetService("VirtualInputManager")
+                        if vim then
+                            local absPos = gui.AbsolutePosition
+                            local absSize = gui.AbsoluteSize
+                            local centerX = absPos.X + (absSize.X / 2)
+                            local centerY = absPos.Y + (absSize.Y / 2)
+                            
+                            -- Offset GuiInset (biasanya 36 pixel untuk topbar roblox)
+                            local inset = game:GetService("GuiService"):GetGuiInset()
+                            centerY = centerY + inset.Y
+
+                            -- Simulasikan jari menyentuh layar
+                            vim:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
+                            task.wait(0.02)
+                            vim:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+                        end
+                    end)
+                    
+                    -- METODE 2: Firesignal Fallback
                     local fSignal = getgenv().firesignal or firesignal
                     if typeof(fSignal) == "function" then
                         pcall(function() fSignal(gui.MouseButton1Click) end)
-                        pcall(function() fSignal(gui.MouseButton1Down) end)
                         pcall(function() fSignal(gui.Activated) end)
-                        clicked = true
                     end
                     
-                    if not clicked and typeof(getconnections) == "function" then
+                    -- METODE 3: GetConnections Fallback
+                    if typeof(getconnections) == "function" then
                         pcall(function()
                             for _, conn in pairs(getconnections(gui.MouseButton1Click)) do conn:Fire() end
                             for _, conn in pairs(getconnections(gui.Activated)) do conn:Fire() end
                         end)
-                        clicked = true
                     end
                     
-                    if clicked then return true end
+                    return true
                 end
             end
         end
@@ -107,10 +133,12 @@ return function(WindUI, TebakKataTab)
         -- Ketik huruf per huruf
         for i = 1, #wordUpper do
             local char = string.sub(wordUpper, i, i)
-            local clicked = clickUIButton(char)
             
-            -- Fallback Keyboard Asli
-            if not clicked then
+            -- Panggil fungsi klik ke tombol UI di layar
+            clickUIButton(char)
+            
+            -- Jaminan Ganda: Paksa kirim sinyal keyboard murni ke Roblox
+            pcall(function()
                 local vim = game:GetService("VirtualInputManager")
                 local keycode = Enum.KeyCode[char]
                 if keycode then
@@ -118,22 +146,30 @@ return function(WindUI, TebakKataTab)
                     task.wait(0.01)
                     vim:SendKeyEvent(false, keycode, false, game)
                 end
-            end
+            end)
+            
             task.wait(typingDelay)
         end
         
-        -- Cari dan klik tombol MASUK (ENTER)
-        local enterClicked = clickUIButton("MASUK") or clickUIButton("ENTER") or clickUIButton("SUBMIT") or clickUIButton("JAWAB")
+        -- Beri jeda kecil setelah ngetik, lalu tekan Masuk
+        task.wait(0.1)
         
-        if not enterClicked then
+        -- Klik tombol konfirmasi (Masuk)
+        clickUIButton("MASUK")
+        clickUIButton("ENTER")
+        clickUIButton("SUBMIT")
+        clickUIButton("JAWAB")
+        
+        -- Jaminan Ganda: Tekan Enter Keyboard
+        pcall(function()
             local vim = game:GetService("VirtualInputManager")
             vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
             task.wait(0.01)
             vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-        end
+        end)
         
         usedWords[wordUpper] = true
-        WindUI:Notify({Title="Bot Menjawab", Content="Mengetik: " .. wordUpper, Duration=1.5})
+        WindUI:Notify({Title="Bot Menjawab", Content="Mengetik & Mengirim: " .. wordUpper, Duration=1.5})
     end
 
     -- ==========================================
@@ -148,9 +184,11 @@ return function(WindUI, TebakKataTab)
                 local cleanText = string.gsub(gui.Text, "<[^>]+>", "")
                 local textUpper = string.upper(cleanText)
                 
+                -- Pola kalimat "Hurufnya adalah: ..."
                 local prompt = string.match(textUpper, "HURUFNYA ADALAH:%s*([A-Z]+)")
                 if prompt then return prompt end
                 
+                -- Fallback huruf melayang
                 if string.match(textUpper, "^[A-Z]+$") and string.len(textUpper) >= 1 and string.len(textUpper) <= 4 then
                     if gui.TextSize > 40 or gui.AbsoluteSize.Y > 40 then
                         return textUpper
@@ -204,6 +242,9 @@ return function(WindUI, TebakKataTab)
                         local randomIndex = math.random(1, #possibleWords)
                         local chosenWord = possibleWords[randomIndex]
                         
+                        -- Beri jeda sedikit agar seperti manusia berpikir
+                        task.wait(0.5)
+                        
                         TypeAndSubmitWord(chosenWord)
                         lastPrompt = currentPrompt
                         task.wait(2.0) 
@@ -222,7 +263,7 @@ return function(WindUI, TebakKataTab)
     -- ==========================================
     TebakKataTab:Paragraph({
         Title = "Bot Tebak Kata (Auto Answer)",
-        Desc = "Dilengkapi AI Anti-Duplikat. Bot tidak akan menjawab kata yang sudah pernah dipakai oleh lawan!",
+        Desc = "Dilengkapi Virtual Screen Tap (Anti Macet di Eksekutor Mobile) & AI Anti-Duplikat.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
@@ -250,7 +291,6 @@ return function(WindUI, TebakKataTab)
         end
     })
 
-    -- [!] BUG FIX: MENGGANTI SLIDER DENGAN DROPDOWN AGAR 100% TIDAK CRASH DI EXECUTOR
     TebakKataTab:Dropdown({
         Title = "Kecepatan Ngetik Bot",
         Values = {"Sangat Lambat", "Lambat", "Normal", "Cepat", "Super Cepat"},
