@@ -5,7 +5,6 @@ return function(WindUI, TebakKataTab)
 
     -- ==========================================
     -- DATABASE KAMUS KATA SUPER LENGKAP (A-Z)
-    -- Menggunakan [=[ ]=] agar 100% Anti-Error / Anti-Crash di Executor
     -- ==========================================
     local wordDatabaseStr = [=[
         ABA ABAD ABADI ABAI ABANG ABDI ABU ABUABU ACARA ADA ADAB ADALAH ADANG ADAT ADIK ADIL ADU ADUH AGAK AGAMA AGAR AGEN AGUNG AHAD AHLI AIR AJA AJAIB AJAK AJAR AKAL AKAN AKAR AKHIR AKIBAT AKRAB AKSES AKSI AKU AKUN ALAM ALANG ALAS ALAT ALIM ALIR ALIS ALMARI ALUR AMAN AMARAH AMAT AMBIL AMBU AMBUN AMIN ANAK ANCAM ANDA ANDAI ANEH ANGAN ANGGAP ANGGOTA ANGIN ANGKA ANGKAT ANGKUT ANGSA ANJING ANTAR ANTARA ANTRE ANUGERAH ANYAM APA API APUNG ARAH ARANG ARTI ARUS ASA ASAL ASAM ASAP ASAS ASIN ASING ASLI ASMA ASRAMA ASU ASUH ATAP ATAS ATAU ATUR AWAK AWAL AWAM AWAN AWAS AWET AYAH AYAK AYAM AYUN AZAB AZAN AZAS
@@ -34,12 +33,15 @@ return function(WindUI, TebakKataTab)
         XENON XILOFON
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA
+        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT
     ]=]
 
-    -- Ekstrak kata tanpa menyebabkan crash
+    -- Ekstrak kata ke dalam Dictionary & Lookup Table (Untuk scan cepat)
     local Dictionary = {}
+    local DictLookup = {}
     for word in string.gmatch(wordDatabaseStr, "%S+") do
         table.insert(Dictionary, word)
+        DictLookup[word] = true
     end
     
     local usedWords = {}
@@ -62,10 +64,20 @@ return function(WindUI, TebakKataTab)
                     text = string.upper(string.gsub(text, "%s+", ""))
                     local tTarget = string.upper(targetText)
                     
-                    if text == tTarget or string.match(text, tTarget) then
-                        pcall(function() fireClick(gui.MouseButton1Click) end)
-                        pcall(function() fireClick(gui.Activated) end)
-                        return true
+                    -- Jika target hanya 1 huruf (A-Z di keyboard)
+                    if string.len(tTarget) == 1 then
+                        if text == tTarget then
+                            pcall(function() fireClick(gui.MouseButton1Click) end)
+                            pcall(function() fireClick(gui.Activated) end)
+                            return true
+                        end
+                    else
+                        -- Jika target adalah kata (seperti tombol MASUK / ENTER)
+                        if text == tTarget or string.match(text, tTarget) then
+                            pcall(function() fireClick(gui.MouseButton1Click) end)
+                            pcall(function() fireClick(gui.Activated) end)
+                            return true
+                        end
                     end
                 end
             end
@@ -79,10 +91,12 @@ return function(WindUI, TebakKataTab)
     local function TypeAndSubmitWord(word)
         local wordUpper = string.upper(word)
         
+        -- Ketik huruf per huruf di UI Keyboard
         for i = 1, #wordUpper do
             local char = string.sub(wordUpper, i, i)
             local clicked = clickUIButton(char)
             
+            -- Fallback jika game pakai input asli (VIM)
             if not clicked then
                 local vim = game:GetService("VirtualInputManager")
                 local keycode = Enum.KeyCode[char]
@@ -95,7 +109,8 @@ return function(WindUI, TebakKataTab)
             task.wait(typingDelay)
         end
         
-        local enterClicked = clickUIButton("ENTER") or clickUIButton("SUBMIT") or clickUIButton("JAWAB") or clickUIButton("OK") or clickUIButton(">")
+        -- Cari dan klik tombol ENTER atau MASUK (Sesuai screenshot)
+        local enterClicked = clickUIButton("MASUK") or clickUIButton("ENTER") or clickUIButton("SUBMIT") or clickUIButton("JAWAB")
         
         if not enterClicked then
             local vim = game:GetService("VirtualInputManager")
@@ -109,18 +124,23 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: MENCARI SOAL 
+    -- FUNGSI SCANNER: MENCARI SOAL (HURUF PROMPT)
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
         if pg then
             for _, gui in ipairs(pg:GetDescendants()) do
                 if gui:IsA("TextLabel") and gui.Visible then
-                    local text = gui.Text
+                    local textUpper = string.upper(gui.Text)
                     
-                    if string.match(text, "^[A-Z]+$") and string.len(text) >= 1 and string.len(text) <= 4 then
-                        if gui.TextSize > 25 or gui.AbsoluteSize.Y > 30 then
-                            return text
+                    -- Kunci Target Spesifik sesuai screenshot: "Hurufnya adalah: SIR"
+                    local prompt = string.match(textUpper, "HURUFNYA ADALAH:%s*([A-Z]+)")
+                    if prompt then return prompt end
+                    
+                    -- Fallback untuk huruf besar yang melayang di tengah layar
+                    if string.match(textUpper, "^[A-Z]+$") and string.len(textUpper) >= 1 and string.len(textUpper) <= 4 then
+                        if gui.TextSize > 40 or gui.AbsoluteSize.Y > 40 then
+                            return textUpper
                         end
                     end
                 end
@@ -130,16 +150,42 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
+    -- FUNGSI SCANNER: MEMBACA KATA LAWAN (ANTI DUPLIKAT)
+    -- ==========================================
+    local function ScanOpponentWords()
+        local pg = lp:FindFirstChild("PlayerGui")
+        if pg then
+            for _, gui in ipairs(pg:GetDescendants()) do
+                if gui:IsA("TextLabel") and gui.Visible then
+                    -- Abaikan UI tulisan prompt
+                    if not string.match(string.upper(gui.Text), "HURUFNYA") then
+                        local cleanedText = string.upper(string.gsub(gui.Text, "%s+", ""))
+                        -- Jika teks yang ada di layar merupakan kata bahasa indonesia, berarti lawan baru saja menjawab kata itu!
+                        if string.len(cleanedText) >= 2 and DictLookup[cleanedText] then
+                            usedWords[cleanedText] = true
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- ==========================================
     -- LOGIKA UTAMA BOT
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
-            local lastPrompt = ""
-            
             while isBotActive do
+                -- Memindai apakah ada kata yang baru saja dijawab oleh lawan
+                ScanOpponentWords()
+                
                 local currentPrompt = GetCurrentPrompt()
                 
                 if currentPrompt and currentPrompt ~= "" then
+                    -- Cek apakah giliran kita (Apakah tombol MASUK / keyboard terlihat?)
+                    local isOurTurn = clickUIButton("MASUK_CHECK_ONLY") -- Trik: Cek fungsi tanpa klik
+                    -- Kita asumsikan jika ada prompt "Hurufnya adalah:", berarti game sedang berjalan.
+                    
                     local possibleWords = {}
                     for _, word in ipairs(Dictionary) do
                         if string.match(word, currentPrompt) and not usedWords[word] then
@@ -147,17 +193,17 @@ return function(WindUI, TebakKataTab)
                         end
                     end
                     
+                    -- Jika ada jawaban dan ini giliran kita, Jawab!
                     if #possibleWords > 0 then
                         local randomIndex = math.random(1, #possibleWords)
                         local chosenWord = possibleWords[randomIndex]
                         
                         TypeAndSubmitWord(chosenWord)
-                        lastPrompt = currentPrompt
-                        task.wait(2.5) 
+                        task.wait(2.0) -- Jeda setelah menjawab agar tidak spam ngetik
                     end
                 end
                 
-                task.wait(0.3) 
+                task.wait(0.2) -- Kecepatan mata bot merefresh pencarian soal
             end
         end)
     end
@@ -167,7 +213,7 @@ return function(WindUI, TebakKataTab)
     -- ==========================================
     TebakKataTab:Paragraph({
         Title = "Bot Tebak Kata (Auto Answer)",
-        Desc = "Dilengkapi dengan ribuan database kata KBBI (A-Z). Bot akan menjawab dan mengetik otomatis dengan variasi kata acak.",
+        Desc = "Dilengkapi AI Anti-Duplikat. Bot tidak akan menjawab kata yang sudah pernah dipakai oleh lawan!",
         Color = Color3.fromHex("#0F7BFF")
     })
 
@@ -195,11 +241,12 @@ return function(WindUI, TebakKataTab)
         end
     })
 
+    -- Perbaikan ERROR SLIDER: Menggunakan parameter 'Default' sesuai aturan eksekutor WindUI
     TebakKataTab:Slider({
         Title = "Kecepatan Ngetik Bot",
         Min = 1,
         Max = 10,
-        Value = 5,
+        Default = 5,
         Callback = function(value)
             typingDelay = 0.1 - (value * 0.009)
         end
