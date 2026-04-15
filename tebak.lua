@@ -66,7 +66,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- CUSTOM FLOATING UI
+    -- CUSTOM FLOATING UI (SCREEN GUI)
     -- ==========================================
     local FloatingUI = Instance.new("ScreenGui")
     FloatingUI.Name = "SYNC_TebakKataGUI"
@@ -151,7 +151,7 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI GAIB: FORCE CLICKER ULTIMATE (PC & MOBILE)
+    -- FUNGSI GAIB: KLIK UI KEYBOARD (DIPISAH: AMAN vs BRUTAL)
     -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
@@ -164,7 +164,57 @@ return function(WindUI, TebakKataTab)
         return string.upper(string.gsub(string.gsub(text, "<[^>]+>", ""), "%s+", ""))
     end
 
-    local function ForceClickGUI(gui)
+    -- KLIK HALUS: Khusus untuk mengetik Huruf A-Z agar tidak dobel/spam
+    local function SafeSingleClickForLetter(gui)
+        local success = false
+        
+        -- Metode 1: Fire connections secara presisi (Hanya ambil index ke-1)
+        if typeof(getconnections) == "function" then
+            pcall(function()
+                local clickConns = getconnections(gui.MouseButton1Click)
+                if clickConns and #clickConns > 0 then
+                    clickConns[1]:Fire() 
+                    success = true
+                else
+                    local actConns = getconnections(gui.Activated)
+                    if actConns and #actConns > 0 then
+                        actConns[1]:Fire()
+                        success = true
+                    end
+                end
+            end)
+        end
+        
+        -- Metode 2: Internal Firesignal
+        if not success and typeof(firesignal) == "function" then
+            pcall(function() firesignal(gui.MouseButton1Click) end)
+            success = true
+        end
+        
+        -- Metode 3: Sentuhan Jari Murni (Sangat Akurat untuk HP)
+        if not success then
+            pcall(function()
+                local vim = game:GetService("VirtualInputManager")
+                if vim then
+                    local absPos = gui.AbsolutePosition
+                    local absSize = gui.AbsoluteSize
+                    local x = absPos.X + (absSize.X / 2)
+                    local y = absPos.Y + (absSize.Y / 2)
+                    local inset = game:GetService("GuiService"):GetGuiInset()
+                    local adjustedY = y + inset.Y
+                    
+                    vim:SendTouchEvent(1, 0, x, adjustedY)
+                    task.wait(0.02)
+                    vim:SendTouchEvent(1, 2, x, adjustedY)
+                    success = true
+                end
+            end)
+        end
+        return success
+    end
+
+    -- KLIK BRUTAL: Khusus untuk tombol hijau "MASUK" yang bandel!
+    local function BrutalClickForEnter(gui)
         local absPos = gui.AbsolutePosition
         local absSize = gui.AbsoluteSize
         local x = absPos.X + (absSize.X / 2)
@@ -175,14 +225,13 @@ return function(WindUI, TebakKataTab)
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
             if vim then
-                -- Touch Event (Mobile Android Paling Kuat)
+                -- Sentuh & Mouse secara beruntun
                 vim:SendTouchEvent(1, 0, x, adjustedY)
-                task.wait(0.03) 
+                task.wait(0.02) 
                 vim:SendTouchEvent(1, 2, x, adjustedY)
                 
-                -- Mouse Event (PC / Emulator)
                 vim:SendMouseButtonEvent(x, adjustedY, 0, true, game, 0)
-                task.wait(0.03)
+                task.wait(0.02)
                 vim:SendMouseButtonEvent(x, adjustedY, 0, false, game, 0)
             end
         end)
@@ -201,7 +250,8 @@ return function(WindUI, TebakKataTab)
         end
     end
 
-    local function clickUIButton(targetText)
+    -- Parameter isEnterBtn menentukan jenis klik
+    local function clickUIButton(targetText, isEnterBtn)
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
         
@@ -220,7 +270,11 @@ return function(WindUI, TebakKataTab)
                         end
 
                         if isMatch then
-                            ForceClickGUI(gui)
+                            if isEnterBtn then
+                                BrutalClickForEnter(gui)
+                            else
+                                SafeSingleClickForLetter(gui)
+                            end
                             return true
                         end
                     end
@@ -255,7 +309,7 @@ return function(WindUI, TebakKataTab)
         local wordUpper = string.upper(word)
         local promptUpper = string.upper(prompt or "")
         
-        -- MENCEGAH BUG HURUF NUMPUK
+        -- MENCEGAH BUG HURUF NUMPUK DI KOTAK
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
             if vim then
@@ -268,31 +322,36 @@ return function(WindUI, TebakKataTab)
         end)
         task.wait(0.1)
 
-        -- KITA HANYA NGETIK SISA HURUFNYA
+        -- HANYA NGETIK SISA HURUFNYA
         local stringToType = wordUpper
         if promptUpper ~= "" and string.sub(wordUpper, 1, string.len(promptUpper)) == promptUpper then
             stringToType = string.sub(wordUpper, string.len(promptUpper) + 1)
         end
         
+        WindUI:Notify({Title="Bot Eksekusi", Content="Kata: " .. wordUpper .. " | Ngetik: " .. stringToType, Duration=1.5})
+        
+        -- Ketik Huruf A-Z (Menggunakan Safe Click)
         for i = 1, #stringToType do
             local char = string.sub(stringToType, i, i)
-            clickUIButton(char)
+            clickUIButton(char, false)
             task.wait(typingDelay)
         end
         
         task.wait(0.15)
         
-        -- PENCET TOMBOL MASUK DENGAN BERBAGAI CARA!
-        clickUIButton("MASUK")
-        clickUIButton("ENTER")
-        clickUIButton("JAWAB")
+        -- KLIK TOMBOL ENTER (Menggunakan Brutal Click)
+        clickUIButton("MASUK", true)
+        clickUIButton("ENTER", true)
+        clickUIButton("JAWAB", true)
         
-        -- JAMINAN MUTLAK: Tekan tombol ENTER di keyboard fisik PC / Emulator
+        -- Cadangan Fisik Virtual
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
-            vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-            task.wait(0.05)
-            vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+            if vim then
+                vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                task.wait(0.05)
+                vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+            end
         end)
         
         usedWords[wordUpper] = true
@@ -398,7 +457,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (DENGAN AI DARURAT)
+    -- LOGIKA UTAMA BOT
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
@@ -423,10 +482,10 @@ return function(WindUI, TebakKataTab)
                                 end
                             end
                             
-                            -- EMERGENCY AI GENERATOR: Jika kata tidak ada di kamus, buat kata slang acak!
+                            -- EMERGENCY AI GENERATOR: Singkatan darurat jika mati gaya
                             if #possibleWords == 0 then
                                 UpdateStatus("AI Darurat aktif untuk: " .. currentPrompt)
-                                local emergencySuffixes = {"A", "I", "U", "E", "O", "AN", "KAN", "NYA", "KU", "MU", "S", "T", "NG"}
+                                local emergencySuffixes = {"A", "I", "U", "E", "O", "AN", "KAN", "NYA", "KU", "MU"}
                                 for _, suf in ipairs(emergencySuffixes) do
                                     table.insert(possibleWords, currentPrompt .. suf)
                                 end
@@ -499,8 +558,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V16 - The God AI)",
-        Desc = "Kamus 10x Lipat + Emergency AI Generator + Ultimate Masuk Clicker. 100% Sempurna.",
+        Title = "Bot Tebak Kata (V17 - The Balanced AI)",
+        Desc = "Klik huruf akurat & Enter brutal. Ditambah AI darurat untuk singkatan aneh.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
