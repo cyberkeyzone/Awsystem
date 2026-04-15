@@ -6,7 +6,7 @@ return function(WindUI, TebakKataTab)
     local lp = Players.LocalPlayer
 
     -- ==========================================
-    -- DATABASE KAMUS KATA MEGA LENGKAP (A-Z) + SINGKATAN
+    -- DATABASE KAMUS MEGA + SINGKATAN MAUT
     -- ==========================================
     local wordDatabaseStr = [=[
         ABA ABAD ABADI ABAI ABANG ABDI ABU ABUABU ACARA ADA ADAB ADALAH ADANG ADAT ADIK ADIL ADU ADUH AGAK AGAMA AGAR AGEN AGUNG AHAD AHLI AIR AJA AJAIB AJAK AJAR AKAL AKAN AKAR AKHIR AKIBAT AKRAB AKSES AKSI AKU AKUN ALAM ALANG ALAS ALAT ALIM ALIR ALIS ALMARI ALUR AMAN AMARAH AMAT AMBIL AMBU AMBUN AMIN ANAK ANCAM ANDA ANDAI ANEH ANGAN ANGGAP ANGGOTA ANGIN ANGKA ANGKAT ANGKUT ANGSA ANJING ANTAR ANTARA ANTRE ANUGERAH ANYAM APA API APUNG ARAH ARANG ARTI ARUS ASA ASAL ASAM ASAP ASAS ASIN ASING ASLI ASMA ASRAMA ASU ASUH ATAP ATAS ATAU ATUR AWAK AWAL AWAM AWAN AWAS AWET AYAH AYAK AYAM AYUN AZAB AZAN AZAS
@@ -32,11 +32,20 @@ return function(WindUI, TebakKataTab)
         UANG UAP UBAH UBAN UBAT UBI UCAP UDANG UDARA UJIAN UJUNG UKIR UKUR ULAMA ULANG ULAR ULAT UMAT UMBUR UMUM UMUR UNDANG UNDUR UNGU UNTA UNTUK UNTUNG UPACARA UPAH UPAYA URAT URUS USAH USAHA USIA USIR USUL USUS UTAMA UTARA UTUS UZUR
         VAKSIN VALID VARIASI VAS VERSI VETO VIDEO VILA VIRUS VISI VOKAL VOLUME VONIS VULGAR
         WABAH WADAH WADUK WAFAT WAJAH WAJIB WAKIL WAKTU WALAU WALI WANGI WANITA WARA WARGA WARIS WARNA WARTA WARUNG WASIT WASPADA WATAK WAWANCARA WAYANG WEWENANG WILAYAH WIRAUSAHA WORTEL WUJUD
-        XENON XILOFON XEROX XRAY XTRA XBOX XPERT XPRESS XPLAY XPDC
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA ZODIAK ZINC ZIP
-        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN AYAM AYAT AYAH UPIL UPAH UPA UPACARA KAKI KAKAK KAKEK HARUS HARI HALO LAMPU LAMA LAMBAT
-        AORTA AORTIK AOI AON MSDOS MSGL MSIB MSIA MSTAR AKPOL AKPER AKPRIND AKPK ATGC ATGS ATLET ATG KJP KJRI KJN KJUB BPKB STNK KTP SIM DPR MPR
+        
+        -- KATA SUSAH / SINGKATAN / SLANG (ANTI MOGOK)
+        XBOX XEROX XENON XPDC XTRA XYLITOL XRAY XPANDER XYLOFON XP XPRESS XPERT
+        JPN JEPANG JPNN JPRO JPL JP MORGAN JPARK
+        MSDOS MSGL MSIB MSIA MSTAR MSH MASIH MSG MSV MS WORD
+        DYNASTY DYAH DYY DYLAN DYNAMITE DYNAMIC DYN
+        KJRI KJP KJN KJUB KJ KJKS KJM KJT
+        ATGC ATGS ATLET ATG ATGM ATRIBUT
+        AKPOL AKPER AKPRIND AKPK AKP AKBP AKBP
+        AORTA AORTIK AOI AON AOA AOKI AOU
+        BPKB STNK KTP SIM DPR MPR DPD DPRD BNN BKN BKN
+        KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN AYAM AYAT AYAH UPIL UPAH UPA UPACARA KAKI KAKAK KAKEK HARUS HARI HALO LAMPU LAMA LAMBAT
     ]=]
 
     local Dictionary = {}
@@ -52,7 +61,7 @@ return function(WindUI, TebakKataTab)
     local botStateStatus = "Standby..."
     local StatusLabelUI = nil 
 
-    -- Blokir UI Button Mutlak
+    -- Blokir UI Button Mutlak agar tidak baca "PILIH", "MODE", dll
     local BLACKLIST_PROMPT = {
         ["ON"]=true, ["OFF"]=true, ["BOT"]=true, ["UI"]=true, ["KITA"]=true, ["PILIH"]=true, 
         ["ITEM"]=true, ["MODE"]=true, ["SHOP"]=true, ["MENU"]=true, ["NORMAL"]=true, 
@@ -151,7 +160,7 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI GAIB: KLIK UI KEYBOARD (DIPISAH: AMAN vs BRUTAL)
+    -- FUNGSI GAIB: KLIK UI KEYBOARD (DIPISAH AMAN VS BRUTAL)
     -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
@@ -164,11 +173,8 @@ return function(WindUI, TebakKataTab)
         return string.upper(string.gsub(string.gsub(text, "<[^>]+>", ""), "%s+", ""))
     end
 
-    -- KLIK HALUS: Khusus untuk mengetik Huruf A-Z agar tidak dobel/spam
     local function SafeSingleClickForLetter(gui)
         local success = false
-        
-        -- Metode 1: Fire connections secara presisi (Hanya ambil index ke-1)
         if typeof(getconnections) == "function" then
             pcall(function()
                 local clickConns = getconnections(gui.MouseButton1Click)
@@ -185,13 +191,11 @@ return function(WindUI, TebakKataTab)
             end)
         end
         
-        -- Metode 2: Internal Firesignal
         if not success and typeof(firesignal) == "function" then
             pcall(function() firesignal(gui.MouseButton1Click) end)
             success = true
         end
         
-        -- Metode 3: Sentuhan Jari Murni (Sangat Akurat untuk HP)
         if not success then
             pcall(function()
                 local vim = game:GetService("VirtualInputManager")
@@ -213,7 +217,6 @@ return function(WindUI, TebakKataTab)
         return success
     end
 
-    -- KLIK BRUTAL: Khusus untuk tombol hijau "MASUK" yang bandel!
     local function BrutalClickForEnter(gui)
         local absPos = gui.AbsolutePosition
         local absSize = gui.AbsoluteSize
@@ -225,7 +228,6 @@ return function(WindUI, TebakKataTab)
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
             if vim then
-                -- Sentuh & Mouse secara beruntun
                 vim:SendTouchEvent(1, 0, x, adjustedY)
                 task.wait(0.02) 
                 vim:SendTouchEvent(1, 2, x, adjustedY)
@@ -250,7 +252,6 @@ return function(WindUI, TebakKataTab)
         end
     end
 
-    -- Parameter isEnterBtn menentukan jenis klik
     local function clickUIButton(targetText, isEnterBtn)
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
@@ -303,24 +304,30 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: SMART SUFFIX TYPER (PEMOTONG KATA)
+    -- FUNGSI GAIB: PENGHAPUS KOTAK TEKS OTOMATIS
     -- ==========================================
-    local function TypeAndSubmitWord(word, prompt)
-        local wordUpper = string.upper(word)
-        local promptUpper = string.upper(prompt or "")
-        
-        -- MENCEGAH BUG HURUF NUMPUK DI KOTAK
+    local function ClearTextBox()
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
             if vim then
-                for _ = 1, 10 do
+                for _ = 1, 15 do -- Hapus 15 kali untuk memastikan bersih
                     vim:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
                     task.wait(0.01)
                     vim:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
                 end
             end
         end)
-        task.wait(0.1)
+        task.wait(0.15)
+    end
+
+    -- ==========================================
+    -- FUNGSI GAIB: SMART SUFFIX TYPER
+    -- ==========================================
+    local function TypeAndSubmitWord(word, prompt)
+        local wordUpper = string.upper(word)
+        local promptUpper = string.upper(prompt or "")
+        
+        ClearTextBox()
 
         -- HANYA NGETIK SISA HURUFNYA
         local stringToType = wordUpper
@@ -328,9 +335,8 @@ return function(WindUI, TebakKataTab)
             stringToType = string.sub(wordUpper, string.len(promptUpper) + 1)
         end
         
-        WindUI:Notify({Title="Bot Eksekusi", Content="Kata: " .. wordUpper .. " | Ngetik: " .. stringToType, Duration=1.5})
+        WindUI:Notify({Title="Eksekusi Kata", Content="Mengirim: " .. wordUpper, Duration=1.5})
         
-        -- Ketik Huruf A-Z (Menggunakan Safe Click)
         for i = 1, #stringToType do
             local char = string.sub(stringToType, i, i)
             clickUIButton(char, false)
@@ -339,7 +345,7 @@ return function(WindUI, TebakKataTab)
         
         task.wait(0.15)
         
-        -- KLIK TOMBOL ENTER (Menggunakan Brutal Click)
+        -- KLIK TOMBOL ENTER BRUTAL
         clickUIButton("MASUK", true)
         clickUIButton("ENTER", true)
         clickUIButton("JAWAB", true)
@@ -353,12 +359,10 @@ return function(WindUI, TebakKataTab)
                 vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
             end
         end)
-        
-        usedWords[wordUpper] = true
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER V15: X-AXIS COMBINER (THE PERFECT READER)
+    -- FUNGSI SCANNER V15: X-AXIS COMBINER 
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
@@ -457,12 +461,14 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT
+    -- LOGIKA UTAMA BOT (SELF-CORRECTING AI)
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
             local lastPrompt = ""
             local answeredThisTurn = false
+            local answerTime = 0
+            local chosenWordThisTurn = ""
             
             while isBotActive do
                 ScanOpponentWords()
@@ -473,6 +479,7 @@ return function(WindUI, TebakKataTab)
                     
                     if currentPrompt then
                         if currentPrompt ~= lastPrompt then
+                            -- GANTI GILIRAN ATAU SOAL BARU
                             UpdateStatus("GILIRAN KITA! Soal: " .. currentPrompt)
                             
                             local possibleWords = {}
@@ -482,30 +489,53 @@ return function(WindUI, TebakKataTab)
                                 end
                             end
                             
-                            -- EMERGENCY AI GENERATOR: Singkatan darurat jika mati gaya
+                            -- EMERGENCY AI: Buat singkatan/kata acak jika mentok
                             if #possibleWords == 0 then
-                                UpdateStatus("AI Darurat aktif untuk: " .. currentPrompt)
-                                local emergencySuffixes = {"A", "I", "U", "E", "O", "AN", "KAN", "NYA", "KU", "MU"}
+                                UpdateStatus("Darurat: Mencari akhiran...")
+                                local emergencySuffixes = {"A", "I", "U", "E", "O", "AN", "KAN", "NYA", "KU", "MU", "S", "NG", "T"}
                                 for _, suf in ipairs(emergencySuffixes) do
                                     table.insert(possibleWords, currentPrompt .. suf)
                                 end
                             end
                             
                             if #possibleWords > 0 then
-                                local chosenWord = possibleWords[math.random(1, #possibleWords)]
+                                chosenWordThisTurn = possibleWords[math.random(1, #possibleWords)]
                                 task.wait(0.3) 
-                                TypeAndSubmitWord(chosenWord, currentPrompt)
+                                TypeAndSubmitWord(chosenWordThisTurn, currentPrompt)
                                 
                                 lastPrompt = currentPrompt
                                 answeredThisTurn = true
+                                answerTime = os.clock() -- Catat waktu jawab
                             else
-                                UpdateStatus("Kosakata habis total!")
+                                UpdateStatus("Kosakata benar-benar habis!")
                                 lastPrompt = currentPrompt
                                 answeredThisTurn = true
+                                answerTime = os.clock()
                             end
                         else
+                            -- PROMPT MASIH SAMA. Cek apakah ini karena game MENOLAK jawaban kita!
                             if answeredThisTurn then
-                                UpdateStatus("Menunggu soal berikutnya...")
+                                -- Jika sudah berlalu 2 detik, tapi giliran kita belum pindah juga...
+                                if os.clock() - answerTime > 2.0 then
+                                    UpdateStatus("Ditolak Game! Mencoba kata lain...")
+                                    
+                                    -- 1. Tandai kata sebelumnya sebagai gagal agar tidak dipakai lagi
+                                    if chosenWordThisTurn ~= "" then
+                                        usedWords[chosenWordThisTurn] = true 
+                                    end
+                                    
+                                    -- 2. Hapus text box
+                                    ClearTextBox()
+                                    
+                                    -- 3. Buka kuncian prompt agar bot mencoba mencari kata lain di loop berikutnya
+                                    lastPrompt = ""
+                                    answeredThisTurn = false
+                                    
+                                    -- Beri jeda kecil agar tidak spam
+                                    task.wait(0.5)
+                                else
+                                    UpdateStatus("Menunggu verifikasi server...")
+                                end
                             else
                                 UpdateStatus("Memproses: " .. currentPrompt)
                             end
@@ -514,9 +544,11 @@ return function(WindUI, TebakKataTab)
                         UpdateStatus("Mencari soal...")
                     end
                 else
+                    -- BUKAN GILIRAN KITA (Keyboard Hilang)
                     lastPrompt = ""
                     answeredThisTurn = false
-                    UpdateStatus("Menunggu Giliran / Match Dimulai...")
+                    chosenWordThisTurn = ""
+                    UpdateStatus("Menunggu Giliran...")
                 end
                 
                 task.wait(0.3) 
@@ -558,8 +590,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V17 - The Balanced AI)",
-        Desc = "Klik huruf akurat & Enter brutal. Ditambah AI darurat untuk singkatan aneh.",
+        Title = "Bot Tebak Kata (V18 - Self Correcting)",
+        Desc = "Pintar! Jika jawaban ditolak oleh game, bot akan otomatis menekan Backspace dan mencari kata lain sampai benar.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
