@@ -260,8 +260,9 @@ return function(WindUI, TebakKataTab)
     -- ==========================================
     -- FUNGSI GAIB: AUTO TYPE & ENTER (DENGAN PENGHAPUSAN MEMORI)
     -- ==========================================
-    local function TypeAndSubmitWord(word)
+    local function TypeAndSubmitWord(word, prompt)
         local wordUpper = string.upper(word)
+        local promptUpper = string.upper(prompt or "")
         
         -- MENCEGAH BUG "MSALAM": Spam tombol Backspace virtual 10x sebelum ngetik!
         pcall(function()
@@ -276,8 +277,15 @@ return function(WindUI, TebakKataTab)
         end)
         task.wait(0.2) -- Jeda biar text box bersih
         
-        for i = 1, #wordUpper do
-            local char = string.sub(wordUpper, i, i)
+        -- FITUR BARU: Potong huruf awalan yang sudah ada di layar! (Mencegah "RRAHIM")
+        local stringToType = wordUpper
+        if promptUpper ~= "" and string.sub(wordUpper, 1, string.len(promptUpper)) == promptUpper then
+            -- Hanya ambil sisa hurufnya saja
+            stringToType = string.sub(wordUpper, string.len(promptUpper) + 1)
+        end
+        
+        for i = 1, #stringToType do
+            local char = string.sub(stringToType, i, i)
             local success = clickUIButton(char)
             
             if not success then
@@ -412,7 +420,7 @@ return function(WindUI, TebakKataTab)
                                 local chosenWord = possibleWords[randomIndex]
                                 
                                 task.wait(0.3) 
-                                TypeAndSubmitWord(chosenWord)
+                                TypeAndSubmitWord(chosenWord, currentPrompt)
                                 
                                 -- Kunci prompt ini agar bot tidak ngetik 2x di 1 giliran
                                 lastPrompt = currentPrompt 
