@@ -21,13 +21,13 @@ return function(WindUI, TebakKataTab)
         JABAT JADI JADWAL JAGA JAGUNG JAHAT JAHIT JAJA JAJAH JAJAN JAKARTA JAKET JALAN JALAR JALUR JAMAN JAMBU JAMIN JAMUR JANDA JANGAN JANJI JANTAN JANTUNG JARAK JARANG JARI JARIK JARING JARUM JASA JATI JATUH JAUH JAWAB JAWATAN JAYA JEBAK JEJAK JELAS JELEK JEMBATAN JEMPOL JEMPUT JENDELA JENIS JEPIT JERAWAT JERAT JERUK JIJIK JILAT JINAK JINGGA JIWA JODOH JONGKOK JOROK JUAL JUANG JUARA JUDI JUDUL JUGA JUJUR JUMAT JUMBO JUMLAH JUMPA JURANG JURUSAN JUTA
         KABAR KABEL KABIN KABUL KABUPATEN KABUR KACA KACANG KACAU KADAL KADANG KADER KAGET KAGUM KAIN KAIT KAKAK KAKEK KAKI KAKU KALAH KALENG KALIAN KALIMAT KALONG KALUNG KAMAR KAMBING KAMERA KAMI KAMPIS KAMPUNG KAMU KANAN KANCING KANDANG KANGGURU KANTONG KANTOR KANTUK KAOS KAPAL KAPAS KAPAN KAPITAL KAPUR KARAKTER KARANG KARENA KARET KARYA KASAR KASIH KASIR KASUR KATA KATAK KAUM KAWAL KAWAN KAWIN KAYA KAYU KEBUN KECIL KECUALI KEDUA KEJAM KEJUT KEKAL KELAS KELINCI KELOMPOK KELUAR KELUARGA KEMARIN KEMBALI KEMEJA KEMUDI KENA KENAL KENCANG KENCING KENDALI KENTAL KENYANG KEPALA KEPITING KERA KERING KERJA KERTAS KESAH KETAT KETAWA KETIKA KETIK KHAS KHUSUS KIAS KILAT KIMIA KIPAS KIRA KIRI KISAH KITA KLUB KOIN KOLAM KOMPUTER KONCI KONTAK KOPI KOPOR KOSONG KOTA KOTAK KOTOR KRITIK KUAH KUAT KUCING KUDA KUE KUKU KULIT KUMIS KUMPUL KUNCI KUNING KUNYUK KUPU KURANG KURS KURSI KUSUT KUTU
         LABA LABIL LABU LACUR LADA LADANG LAGI LAGU LAHIR LAIN LAJU LAKI LALAT LALU LAMA LAMBAT LAMPU LANCI LALU LANGIT LANGKAH LANGSUNG LANJUT LANTAI LAPANGAN LAPAR LAPIS LARI LARUT LATAR LATIH LAUT LAWAN LAYANG LAYAR LAYU LEBAH LEBAR LEBIH LECET LEGA LEHER LEKAT LELAH LELAKI LEMAH LEMAK LEMAR LEMBAR LEMBUT LEMPAR LENGAN LENGKAP LENGKUNG LEPAS LETIH LIAR LIBUR LIDAH LIGA LIHAT LILIN LIMA LINTAH LINTAS LIPAT LOBANG LOMBA LOMPAT LONGGAR LORONG LUANG LUAR LUAS LUDAH LUKA LULUS LUMAYAN LUMPUR LUNAK LUPA LURUS LUTUT
-        MAAF MABUK MACAM MACAN MADU MAHAL MAHASISWA MAIN MAJU MAKAM MAKAN MAKNA MALAM MALAS MALU MAMPU MANA MANDI MANIS MANJA MANTAN MANTO MANTRA MANUSIA MARAH MARGA MASA MASAK MASALAH MASAM MASIH MASING MASJID MASUK MATA MATANG MATI MAU MAUT MAWAR MAYAT MEGA MEGAH MEJA MEKAR MELATI MEMANG MENANG MENGAPA MENTERI MENTIMUN MERAH MEREKA MERK MERPATI MESIN MESKIPUN MESRA MESTI MIE MILIK MIMPI MINAT MINGGU MINTA MINUM MINYAK MIRIP MISAL MISKIN MISTERI MISTIK MOBIL MODAL MODEL MODERN MOHON MOKA MOMEN MONYET MOTOR MUAK MUAL MUAT MUDA MUDAH MUKA MUKJIZAT MULAI MULUS MULUT MUNCUL MUNDUR MUNGKIN MUNTAH MURAH MURAM MURID MURKA MUSIM MUSIK MUSLIM MUSUH MUTIARA MUTLAK
+        MAAF MABUK MACAM MADU MAHAL MAHASISWA MAIN MAJU MAKAM MAKAN MAKNA MALAM MALAS MALU MAMPU MANA MANDI MANIS MANJA MANTAN MANTO MANTRA MANUSIA MARAH MARGA MASA MASAK MASALAH MASAM MASIH MASING MASJID MASUK MATA MATANG MATI MAU MAUT MAWAR MAYAT MEGA MEGAH MEJA MEKAR MELATI MEMANG MENANG MENGAPA MENTERI MENTIMUN MERAH MEREKA MERK MERPATI MESIN MESKIPUN MESRA MESTI MIE MILIK MIMPI MINAT MINGGU MINTA MINUM MINYAK MIRIP MISAL MISKIN MISTERI MISTIK MOBIL MODAL MODEL MODERN MOHON MOKA MOMEN MONYET MOTOR MUAK MUAL MUAT MUDA MUDAH MUKA MUKJIZAT MULAI MULUS MULUT MUNCUL MUNDUR MUNGKIN MUNTAH MURAH MURAM MURID MURKA MUSIM MUSIK MUSLIM MUSUH MUTIARA MUTLAK
         NABI NADA NADI NAFAS NAFSU NAGA NAHAS NAIK NAKAL NAMA NANAS NANTI NAPAS NASI NASIB NASIHAT NASIONAL NATA NEGARA NEGERI NENEK NERAKA NIKAH NIKMAT NILAI NINGRAT NIPIS NODA NOMOR NORMAL NOVEL NYALA NYAMAN NYAMUK NYANYI NYARING NYATA NYAWA NYERI
         OBAT OBENG OBJEK OBOR ODOL OKE OLAH OLEH OLOK OMBAK OMONG OMPONG ONGKOS OPERASI OPINI OPOSISI ORANG ORANYE ORGAN ORMAS ORONG OTAK OTOT OTORITAS
         PACAR PACU PADA PADAM PADANG PADAT PADI PADU PAGAR PAGI PAHAM PAHA PAHIT PAJAK PAKE PAKAI PAKAIAN PAKAR PAKET PAKSA PAKU PALING PALSU PALU PAMAN PAMER PANAS PANCING PANDAI PANDANG PANDU PANEN PANGGIL PANGGUL PANGKAL PANIK PANJANG PANTAI PANTANG PANTAS PANTAT PANTUN PAPA PAPAN PARA PARAH PARIT PARU PARUT PASAR PASIR PASTI PASUKAN PATAH PATUH PATUNG PAUT PAYA PAYUDARA PAYUNG PECAH PEDANG PEDAS PEDIH PEGANG PEGAWAI PEKA PEKAN PELAJAR PELAN PELANGI PELURU PEMUDA PENA PENDEK PENDUDUK PENGARUH PENITI PENTING PENUH PEPAYA PERAHU PERAK PERAN PERANG PERCAYA PEREMPUAN PERGI PERIH PERLU PERNAH PERUT PESAN PESAWAT PESTA PETA PETANI PETIK PETIR PIALA PIATU PICIK PIDATO PIHAK PIJAT PIKIR PILIH PILU PIMPIN PINANG PINDAH PINGGIR PINGGANG PINJAM PINTAR PINTU PIPA PIPI PIRING PISANG PISAU PLASTIK POHON POJOK POLISI POLO POMPA PONDOK POTONG PRIA PRODUK PROSES PROTES PUASA PUCAT PUCUK PUISI PUJI PUKUL PULANG PULAU PULIH PULUH PUNCAK PUNGGUNG PUNYA PURA PUSAT PUSAR PUSING PUTIH PUTRA PUTRI PUTUS
         QARI QURAN QALBU
         RABA RABU RACUN RADANG RADAR RADIO RAGA RAGU RAHANG RAHASIA RAHIM RAIN RAJA RAJIN RAJUT RAKIT RAKSASA RAKYAT RAMAI RAMAH RAMAL RAMBUT RAMI RAMPAS RAMPING RANCANG RACUN RANDOM RANGKA RANJANG RANTAI RANTING RASA RASUL RATAP RATA RATU RATUS RAWAN RAWAT RAYA RAYAP RAYU REAKSI REALITA REBAB REBUNG REBUS REDA REDUP REKAM RELA REMAJA REMAS REMPAH RENCANA RENDAH RENDANG RENTAN REPOT RENTAK RESEP RESMI RESTU RETAK RETAS REZEKI RIANG RIBU RIBUT RIMBA RINGAN RINDU RINGKAS RINTIK RISA RISIKO RIWAYAT RODA ROKOK ROMANTIS ROMBONGAN RONA RONDE ROTAN ROTI RUANG RUAS RUGI RUH RUJUK RUMAH RUMPUT RUMUS RUNTUH RUPA RUPIAH RUSA RUSAK RUSUK
-        SAAT SABAR SABUK SABUN SABTU SADAR SAFARI SAH SAHABAT SAHAM SAHUT SAJA SAJI SAKIT SAKSI SAKTI SAKU SALAH SALAM SALING SALJU SAMA SAMAR SAMBAL SAMBIL SAMBUNG SAMPAH SAMPAI SAMPAN SAMPING SAMUDERA SANA SANDAL SANDANG SANGAT SANGGUP SANGKA SANTAI SAPI SAPU SARAN SARANG SARAT SARI SARING SASARAN SATU SATUAN SAUDARA SAUS SAWAH SAYANG SAYAP SAYUR SEBAB SEBAR SEBELUM SEBERANG SEBUAH SEBUT SEDANG SEDAP SEDEKAH SEDERHANA SEDIA SEDIH SEDIKIT SEDOT SEGAR SEGERA SEHAT SEJAK SEJARAH SEJUK SEKALI SEKARANG SEKAT SEKOLAH SELALU SELAM SELAMAT SELATAN SELESAI SELIMUT SELURUH SEMANGAT SEMBILAN SEMBUH SEMEN SEMENANJUNG SEMESTA SEMPIT SEMPURNA SEMUA SEMUT SENAM SENANG SENAPANG SENDIRI SENGIT SENI SENIN SENJA SENTUH SENYUM SEPAKBOLA SEPATU SEPEDA SEPI SEPULUH SERAGAM SERANG SERAP SERATUS SERBA SERBU SERIBU SERING SERIUS SERTA SERU SERUT SESAK SESAL SESUAI SETAN SETENGAH SETIA SETIAP SETING SETIR SETOR SEWA SIANG SIAP SIAPA SIBUK SIDANG SIFAT SIHIR SIKAP SIKAT SIKSA SIKU SILA SILAHKAN SILANG SILAU SILIH SIMPAN SINAR SINGA SINGGAH SINGKAT SINI SISA SISIR SISWA SITA SITU SIUL SKALA SKOR SOAL SOBEK SOKONG SOMBONG SOPAN SORE SORONG SOSIAL SOTO SPONS SRAGEN SUAMI SUARA SUASANA SUATU SUBUH SUCI SUDAH SUDUT SUKA SUKSES SUKU SULIT SULUH SULTAN SUMBER SUMPAH SUMUR SUNGAI SUNGGUH SUNTIK SUNUNGI SURAT SURAU SURGA SUSAH SUSU SUSUL SUSUN SUTERA SWARTA SYARAT SYUKUR
+        SAAT SABAR SABUK SABUN SABTU SADAR SAFARI SAH SAHABAT SAHAM SAHUT SAJA SAJI SAKIT SAKSI SAKTI SAKU SALAH SALAM SALING SALJU SAMA SAMAR SAMBAL SAMBIL SAMBUNG SAMPAH SAMPAI SAMPAN SAMPING SAMUDERA SANA SANDAL SANDANG SANGAT SANGGUP SANGKA SANTAI SAPI SAPU SARAN SARANG SARAT SARI SASARAN SATU SATUAN SAUDARA SAUS SAWAH SAYANG SAYAP SAYUR SEBAB SEBAR SEBELUM SEBERANG SEBUAH SEBUT SEDANG SEDAP SEDEKAH SEDERHANA SEDIA SEDIH SEDIKIT SEDOT SEGAR SEGERA SEHAT SEJAK SEJARAH SEJUK SEKALI SEKARANG SEKAT SEKOLAH SELALU SELAM SELAMAT SELATAN SELESAI SELIMUT SELURUH SEMANGAT SEMBILAN SEMBUH SEMEN SEMENANJUNG SEMESTA SEMPIT SEMPURNA SEMUA SEMUT SENAM SENANG SENAPANG SENDIRI SENGIT SENI SENIN SENJA SENTUH SENYUM SEPAKBOLA SEPATU SEPEDA SEPI SEPULUH SERAGAM SERANG SERAP SERATUS SERBA SERBU SERIBU SERING SERIUS SERTA SERU SERUT SESAK SESAL SESUAI SETAN SETENGAH SETIA SETIAP SETING SETIR SETOR SEWA SIANG SIAP SIAPA SIBUK SIDANG SIFAT SIHIR SIKAP SIKAT SIKSA SIKU SILA SILAHKAN SILANG SILAU SILIH SIMPAN SINAR SINGA SINGGAH SINGKAT SINI SISA SISIR SISWA SITA SITU SIUL SKALA SKOR SOAL SOBEK SOKONG SOMBONG SOPAN SORE SORONG SOSIAL SOTO SPONS SRAGEN SUAMI SUARA SUASANA SUATU SUBUH SUCI SUDAH SUDUT SUKA SUKSES SUKU SULIT SULUH SULTAN SUMBER SUMPAH SUMUR SUNGAI SUNGGUH SUNTIK SUNUNGI SURAT SURAU SURGA SUSAH SUSU SUSUL SUSUN SUTERA SWARTA SYARAT SYUKUR
         TAAT TABAH TABIR TABRAK TABU TABUNG TABUR TACHI TAFSIR TAHAN TAHAP TAHU TAHUN TAJAM TAKDIR TAKJUB TAKTIK TAKUT TALI TAMAN TAMBAH TAMBAL TAMBAK TAMBANG TAMPAK TAMPAR TAMPIL TAMU TANAH TANAK TANAM TANDA TANDING TANDUK TANGAN TANGGA TANGGAL TANGGUNG TANGIS TANGKAP TANGKAS TANYA TAO TARI TARIK TARIF TARUH TAS TASIK TATA TATAP TAWAR TAYANG TEBAK TEBAL TEBANG TEBING TEBU TEDUH TEGAK TEGANG TEGAR TEGAS TEGUR TEH TEKA TEKAD TEKAN TEKNIK TEKS TELAH TELAN TELANJANG TELAT TELEPON TELINGA TELITI TELUK TELUNJUK TELUR TEMAN TEMBAK TEMBAGA TEMBOK TEMBUS TEMPAT TEMPO TEMPUH TEMU TENANG TENDA TENDANG TENGAH TENGGELAM TENGKAR TENTANG TENTARA TENTU TEORI TEPAT TEPI TEPUNG TERANG TERAP TERBANG TERBIT TERIAK TERIMA TERJAD TERJEMAH TERJUNG TERKA TERKADANG TERNAK TERUS TETANGGA TETAP TETAS TIANG TIAP TIBA TIDAK TIDUR TIGA TIKAR TIKUS TILANG TIMBANG TIMBUR TIMBUL TIMUR TINDAK TINGGAL TINGGI TINGKAT TINJU TINTA TIPIS TIPU TIRAI TIRU TISU TITIK TITIP TIUP TOKOH TOKO TOKOK TOLAK TOLEH TOLONG TOMAT TOMBOL TONG TONGKAT TONTON TOPI TOTAL TRADISI TUA TUAN TUBUH TUDANG TUDUH TUGAS TUHAN TUJU TUJUH TUKANG TUKAR TULANG TULI TULIS TULUS TUMBUH TUMPANG TUMPUK TUNA TUNDA TUNDUK TUNGGAL TUNGGU TUNTUN TURUN TUTUP
         UANG UAP UBAH UBAN UBAT UBI UCAP UDANG UDARA UJIAN UJUNG UKIR UKUR ULAMA ULANG ULAR ULAT UMAT UMBUR UMUM UMUR UNDANG UNDUR UNGU UNTA UNTUK UNTUNG UPACARA UPAH UPAYA URAT URUS USAH USAHA USIA USIR USUL USUS UTAMA UTARA UTUS UZUR
         VAKSIN VALID VARIASI VAS VERSI VETO VIDEO VILA VIRUS VISI VOKAL VOLUME VONIS VULGAR
@@ -35,7 +35,7 @@ return function(WindUI, TebakKataTab)
         XENON XILOFON
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA
-        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI ITEM MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN MINTA AYAM AYAT AYAH
+        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI ITEM MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN MINTA AYAM AYAT AYAH UPIL UPAH UPA UPACARA
     ]=]
 
     local Dictionary = {}
@@ -48,14 +48,15 @@ return function(WindUI, TebakKataTab)
     local usedWords = {}
     local isBotActive = false
     local typingDelay = 0.05 
-    local botStateStatus = "Menunggu Game Dimulai..."
+    local botStateStatus = "Menunggu Giliran..."
     local StatusLabelUI = nil 
 
-    -- Blokir kata UI agar bot tidak membaca tombol menu!
+    -- Blokir SELURUH teks UI Keyboard agar mata bot tidak picek
     local BLACKLIST_PROMPT = {
-        ["ON"] = true, ["OFF"] = true, ["BOT"] = true, ["UI"] = true, 
-        ["KITA"] = true, ["PILIH"] = true, ["ITEM"] = true, ["MODE"] = true,
-        ["SHOP"] = true, ["MENU"] = true, ["NORMAL"] = true, ["BRUTAL"] = true
+        ["Q"]=true, ["W"]=true, ["E"]=true, ["R"]=true, ["T"]=true, ["Y"]=true, ["U"]=true, ["I"]=true, ["O"]=true, ["P"]=true,
+        ["A"]=true, ["S"]=true, ["D"]=true, ["F"]=true, ["G"]=true, ["H"]=true, ["J"]=true, ["K"]=true, ["L"]=true,
+        ["Z"]=true, ["X"]=true, ["C"]=true, ["V"]=true, ["B"]=true, ["N"]=true, ["M"]=true,
+        ["MASUK"]=true, ["ENTER"]=true, ["JAWAB"]=true, ["ON"]=true, ["OFF"]=true, ["BOT"]=true, ["UI"]=true
     }
 
     local function UpdateStatus(text)
@@ -64,7 +65,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- CUSTOM FLOATING UI (SCREEN GUI)
+    -- CUSTOM FLOATING UI
     -- ==========================================
     local FloatingUI = Instance.new("ScreenGui")
     FloatingUI.Name = "SYNC_TebakKataGUI"
@@ -148,20 +149,9 @@ return function(WindUI, TebakKataTab)
         end
     end)
 
-    local function CreateVisualRedDot(x, y)
-        task.spawn(function()
-            local dot = Instance.new("Frame")
-            dot.Size = UDim2.new(0, 15, 0, 15)
-            dot.Position = UDim2.new(0, x - 7.5, 0, y - 7.5)
-            dot.BackgroundColor3 = Color3.new(1, 0, 0)
-            dot.ZIndex = 99999
-            dot.Parent = FloatingUI
-            Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
-            task.wait(0.2)
-            dot:Destroy()
-        end)
-    end
-
+    -- ==========================================
+    -- FUNGSI GAIB: KLIK UI KEYBOARD (SOLID)
+    -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
         if gui:IsA("TextButton") or gui:IsA("TextLabel") then text = gui.Text end
@@ -173,9 +163,6 @@ return function(WindUI, TebakKataTab)
         return string.upper(string.gsub(string.gsub(text, "<[^>]+>", ""), "%s+", ""))
     end
 
-    -- ==========================================
-    -- FUNGSI GAIB: KLIK UI KEYBOARD
-    -- ==========================================
     local function ForceClickGUI(gui)
         local absPos = gui.AbsolutePosition
         local absSize = gui.AbsoluteSize
@@ -184,27 +171,20 @@ return function(WindUI, TebakKataTab)
         local inset = game:GetService("GuiService"):GetGuiInset()
         local adjustedY = y + inset.Y
 
-        CreateVisualRedDot(x, y) 
-        local clicked = false
-
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
             if vim then
-                vim:SendTouchEvent(1, 0, x, adjustedY) 
-                task.wait(0.05) 
-                vim:SendTouchEvent(1, 2, x, adjustedY) 
-                clicked = true
+                -- Kita gunakan MouseButtonEvent karena di beberapa executor mobile ini justru lebih stabil dari TouchEvent
+                vim:SendMouseButtonEvent(x, adjustedY, 0, true, game, 0)
+                task.wait(0.02) 
+                vim:SendMouseButtonEvent(x, adjustedY, 0, false, game, 0)
             end
         end)
         
-        if not clicked then
-            local fSignal = getgenv().firesignal or firesignal
-            if typeof(fSignal) == "function" then
-                pcall(function() fSignal(gui.MouseButton1Click) end)
-                clicked = true
-            end
+        local fSignal = getgenv().firesignal or firesignal
+        if typeof(fSignal) == "function" then
+            pcall(function() fSignal(gui.MouseButton1Click) end)
         end
-        return clicked
     end
 
     local function clickUIButton(targetText)
@@ -232,175 +212,110 @@ return function(WindUI, TebakKataTab)
         return false
     end
 
-    local function IsKeyboardVisible()
+    -- ==========================================
+    -- FUNGSI GAIB: DETEKSI GILIRAN KITA (MASTER)
+    -- ==========================================
+    -- Kita hanya mengecek apakah tombol Hijau "MASUK" ada dan terlihat di layar
+    local function IsItMyTurn()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
-        
-        local keyCount = 0
         for _, gui in ipairs(pg:GetDescendants()) do
-            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 and gui.AbsolutePosition.Y > 0 then
+            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
                 local text = DeepFindButtonText(gui)
-                if text == "Q" or text == "W" or text == "E" or text == "MASUK" then
-                    keyCount = keyCount + 1
+                if text == "MASUK" or text == "ENTER" then
+                    return true
                 end
             end
         end
-        return keyCount >= 2 
+        return false
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: SMART SUFFIX TYPER (ANTI-GANDA)
+    -- FUNGSI GAIB: AUTO TYPE & ENTER
     -- ==========================================
     local function TypeAndSubmitWord(word, prompt)
         local wordUpper = string.upper(word)
         local promptUpper = string.upper(prompt or "")
         
-        -- KITA HARUS HANYA MENGETIK SISA HURUFNYA SAJA (Suffix)
+        -- SUFFIX MAKER: Potong kata jika berawalan prompt.
+        -- Misal: word "UPIL", prompt "UP". stringToType = "IL"
         local stringToType = wordUpper
-        -- Jika kata (misal AYAM) diawali oleh prompt (misal AY), potong!
         if promptUpper ~= "" and string.sub(wordUpper, 1, string.len(promptUpper)) == promptUpper then
-            -- Potong huruf awalan, ambil sisanya saja (AM)
             stringToType = string.sub(wordUpper, string.len(promptUpper) + 1)
         end
         
-        WindUI:Notify({Title="Bot Mengetik", Content="Memilih: " .. wordUpper .. " | Mengetik: " .. stringToType, Duration=1.5})
+        WindUI:Notify({Title="Bot Mengetik", Content="Memilih: " .. wordUpper .. " | Sisa: " .. stringToType, Duration=1.5})
         
-        -- Ketik sisa hurufnya
+        -- Mengetik hanya sisa hurufnya saja di UI Keyboard
         for i = 1, #stringToType do
             local char = string.sub(stringToType, i, i)
-            local success = clickUIButton(char)
-            
-            if not success then
-                pcall(function()
-                    local vim = game:GetService("VirtualInputManager")
-                    local keycode = Enum.KeyCode[char]
-                    if keycode then
-                        vim:SendKeyEvent(true, keycode, false, game)
-                        task.wait(0.01)
-                        vim:SendKeyEvent(false, keycode, false, game)
-                    end
-                end)
-            end
+            clickUIButton(char)
             task.wait(typingDelay)
         end
         
         task.wait(0.1)
-        local enterSuccess = clickUIButton("MASUK") or clickUIButton("ENTER") or clickUIButton("JAWAB")
-        if not enterSuccess then
-            pcall(function()
-                local vim = game:GetService("VirtualInputManager")
-                vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.01)
-                vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-            end)
-        end
+        
+        -- Tekan Masuk
+        clickUIButton("MASUK")
+        clickUIButton("ENTER")
         
         usedWords[wordUpper] = true
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER V11: ANTI KEYBOARD BUTTON BUG
+    -- FUNGSI SCANNER V12: CARI SOAL TERBESAR
     -- ==========================================
-    local function GetCurrentPrompt()
+    -- Fungsi ini HANYA DIPANGGIL saat keyboard muncul (Giliran Kita)
+    local function GetPromptOnOurTurn()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return nil end
         
-        local isMatchActive = false
         local bestPrompt = nil
         local largestSize = 0
-
-        -- TAHAP 1: Pastikan match jalan
-        for _, gui in ipairs(pg:GetDescendants()) do
-            if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
-                local textUpper = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
-                if string.find(textUpper, "HURUFNYA") then
-                    isMatchActive = true
-                    -- Jika format digabung, langsung kembalikan.
-                    local exactMatch = string.match(textUpper, "HURUFNYA[^:]*:%s*([A-Z]+)")
-                    if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 4 then
-                        return exactMatch
-                    end
-                end
-            end
-        end
-
-        if not isMatchActive then return nil end
-
-        -- TAHAP 2: Cari kotak teks paling BESAR (Mengabaikan tombol keyboard)
+        
         for _, gui in ipairs(pg:GetDescendants()) do
             if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
                 local rawText = string.gsub(gui.Text, "<[^>]+>", "")
-                local stripped = string.gsub(string.upper(rawText), "%s+", "")
-
-                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
+                local stripped = string.upper(string.gsub(rawText, "%s+", ""))
+                
+                -- Soal di game ini adalah 1-3 huruf A-Z.
+                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 3 then
+                    -- Hindari membaca UI yang salah (Seperti Tombol Keyboard itu sendiri)
                     if not BLACKLIST_PROMPT[stripped] then
-                        
-                        -- ANTI KEYBOARD BUG: Pastikan label ini BUKAN bagian dari tombol keyboard
-                        local isInsideButton = false
-                        local parent = gui.Parent
-                        -- Cek hingga 3 lapis ke atas
-                        for i = 1, 3 do
-                            if parent and (parent:IsA("TextButton") or parent:IsA("ImageButton")) then
-                                isInsideButton = true
-                                break
-                            end
-                            parent = parent and parent.Parent
-                        end
-
-                        -- Jika ini murni Label Soal (bukan tombol keyboard), ambil yang paling besar
-                        if not isInsideButton then
-                            local size = gui.TextSize or gui.AbsoluteSize.Y
-                            if size > largestSize then
-                                largestSize = size
-                                bestPrompt = stripped
-                            end
+                        local size = gui.TextSize or gui.AbsoluteSize.Y
+                        if size > largestSize then
+                            largestSize = size
+                            bestPrompt = stripped
                         end
                     end
                 end
             end
         end
-        
         return bestPrompt
     end
 
-    local function ScanOpponentWords()
-        local pg = lp:FindFirstChild("PlayerGui")
-        if pg then
-            for _, gui in ipairs(pg:GetDescendants()) do
-                if gui:IsA("TextLabel") and gui.Visible then
-                    local textUpper = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
-                    if not string.match(textUpper, "HURUFNYA") then
-                        local cleanedText = string.gsub(textUpper, "%s+", "")
-                        if string.len(cleanedText) >= 2 and DictLookup[cleanedText] then
-                            usedWords[cleanedText] = true
-                        end
-                    end
-                end
-            end
-        end
-    end
-
     -- ==========================================
-    -- LOGIKA UTAMA BOT
+    -- LOGIKA UTAMA BOT (STATE MACHINE TERBAIK)
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
-            local lastPrompt = ""
+            local hasAnsweredThisTurn = false
             
             while isBotActive do
-                ScanOpponentWords()
-                local currentPrompt = GetCurrentPrompt()
+                local myTurn = IsItMyTurn()
                 
-                if currentPrompt and currentPrompt ~= "" then
-                    
-                    if IsKeyboardVisible() then
-                        -- GILIRAN KITA
-                        if currentPrompt ~= lastPrompt then
-                            UpdateStatus("GILIRANMU! Menjawab: " .. currentPrompt)
+                if myTurn then
+                    -- JIKA GILIRAN KITA & BELUM MENJAWAB
+                    if not hasAnsweredThisTurn then
+                        task.wait(0.5) -- Beri waktu 0.5 detik agar UI huruf prompt selesai loading
+                        
+                        local currentPrompt = GetPromptOnOurTurn()
+                        if currentPrompt then
+                            UpdateStatus("Giliran Kita! Soal: " .. currentPrompt)
                             
                             local possibleWords = {}
                             for _, word in ipairs(Dictionary) do
-                                -- WAJIB BERAWALAN PROMPT! (Bukan sekadar mengandung)
+                                -- WAJIB BERAWALAN PROMPT! (Soal: UP, Kata: UPIL)
                                 if string.match(word, "^" .. currentPrompt) and not usedWords[word] then
                                     table.insert(possibleWords, word)
                                 end
@@ -410,36 +325,25 @@ return function(WindUI, TebakKataTab)
                                 local randomIndex = math.random(1, #possibleWords)
                                 local chosenWord = possibleWords[randomIndex]
                                 
-                                task.wait(0.3) 
-                                -- Lempar kata terpilih dan soalnya untuk dipotong
                                 TypeAndSubmitWord(chosenWord, currentPrompt)
-                                
-                                lastPrompt = currentPrompt 
-                                task.wait(1.5) 
+                                hasAnsweredThisTurn = true -- Kunci agar tidak spam di 1 giliran
                             else
-                                UpdateStatus("Kata habis untuk: " .. currentPrompt)
-                                lastPrompt = currentPrompt 
+                                UpdateStatus("Kosakata habis untuk: " .. currentPrompt)
+                                hasAnsweredThisTurn = true -- Kunci agar tidak error loop
                             end
                         else
-                            UpdateStatus("Menunggu Lawan Mengetik...")
+                            UpdateStatus("Mencari soal di layar...")
                         end
-                        
                     else
-                        -- BUKAN GILIRAN KITA
-                        UpdateStatus("Menunggu Giliran (Soal: " .. currentPrompt .. ")")
-                        if currentPrompt ~= lastPrompt then
-                            lastPrompt = "" 
-                        end
+                        UpdateStatus("Menunggu giliran selesai...")
                     end
                 else
-                    if lastPrompt ~= "" then
-                        usedWords = {} 
-                        lastPrompt = ""
-                        UpdateStatus("Menunggu Game Dimulai...")
-                        if FloatingUI.Enabled then
-                            WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori direset!", Duration=2})
-                        end
+                    -- JIKA KEYBOARD HILANG = BUKAN GILIRAN KITA
+                    -- Reset kuncian langsung saat keyboard lenyap!
+                    if hasAnsweredThisTurn then
+                        hasAnsweredThisTurn = false 
                     end
+                    UpdateStatus("Menunggu Giliran / Match Dimulai...")
                 end
                 
                 task.wait(0.2) 
@@ -455,7 +359,8 @@ return function(WindUI, TebakKataTab)
         if isBotActive then
             ToggleBotBtn.Text = "BOT: ON"
             ToggleBotBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
-            UpdateStatus("Mendeteksi game...")
+            usedWords = {} -- Reset memori otomatis saat bot dinyalakan
+            UpdateStatus("Memulai sistem bot...")
             BotLoop()
         else
             ToggleBotBtn.Text = "BOT: OFF"
@@ -480,8 +385,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V11 - Perfect Suffix)",
-        Desc = "100% Akurat. Tidak lagi buta soal dan bisa memotong kata otomatis agar tidak ngetik ganda.",
+        Title = "Bot Tebak Kata (V12 - The Absolute Final)",
+        Desc = "100% Sempurna. Bot hanya mendeteksi saat Keyboard muncul dan memotong kata sisa dengan akurasi dewa.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
