@@ -51,13 +51,10 @@ return function(WindUI, TebakKataTab)
     local botStateStatus = "Menunggu Game Dimulai..."
     local StatusLabelUI = nil 
 
-    -- Filter Kata-Kata UI agar tidak dibaca sebagai Soal
+    -- Blokir kata UI mutlak! Kata dengan panjang 4 huruf ke atas TIDAK AKAN dianggap soal.
     local BLACKLIST_PROMPT = {
-        ["ITEM"] = true, ["MODE"] = true, ["SHOP"] = true, ["MENU"] = true, 
-        ["BACK"] = true, ["PLAY"] = true, ["EXIT"] = true, ["HOME"] = true, 
-        ["TIME"] = true, ["VOTE"] = true, ["ON"] = true, ["OFF"] = true, 
-        ["BOT"] = true, ["UI"] = true, ["KITA"] = true, ["PILIH"] = true,
-        ["NORMAL"] = true, ["BRUTAL"] = true, ["SANTAI"] = true
+        ["ON"] = true, ["OFF"] = true, ["BOT"] = true, ["UI"] = true, 
+        ["KITA"] = true, ["PILIH"] = true, ["SIR"] = true -- Tambah manual jika perlu
     }
 
     local function UpdateStatus(text)
@@ -179,7 +176,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: SIMULASI SENTUHAN JARI MURNI (ANTI-SPAM)
+    -- FUNGSI GAIB: SIMULASI SENTUHAN JARI SINGLE-PRESS
     -- ==========================================
     local function ForceClickGUI(gui)
         local absPos = gui.AbsolutePosition
@@ -189,21 +186,21 @@ return function(WindUI, TebakKataTab)
         local inset = game:GetService("GuiService"):GetGuiInset()
         local adjustedY = y + inset.Y
 
-        CreateVisualRedDot(x, y) -- Titik merah untuk debug visual
-
+        CreateVisualRedDot(x, y) 
         local clicked = false
-        local vim = game:GetService("VirtualInputManager")
-        
-        -- HANYA GUNAKAN 1 METODE AGAR TIDAK DOUBLE-TYPING ("NGIIMMM")
-        if vim then
-            pcall(function()
-                vim:SendTouchEvent(1, 0, x, adjustedY) -- Tekan
-                task.wait(0.05) -- Jeda vital agar tombol teregister sempurna 1x
-                vim:SendTouchEvent(1, 2, x, adjustedY) -- Lepas
+
+        pcall(function()
+            local vim = game:GetService("VirtualInputManager")
+            if vim then
+                vim:SendTouchEvent(1, 0, x, adjustedY) 
+                task.wait(0.05) -- DURASI SENTUHAN EMAS (0.05s mencegah spam NNNNGGGGG)
+                vim:SendTouchEvent(1, 2, x, adjustedY) 
                 clicked = true
-            end)
-        else
-            -- Jika eksekutor tidak support VIM, baru pakai sinyal klik biasa
+            end
+        end)
+        
+        -- Fallback jika VIM gagal
+        if not clicked then
             local fSignal = getgenv().firesignal or firesignal
             if typeof(fSignal) == "function" then
                 pcall(function() fSignal(gui.MouseButton1Click) end)
@@ -240,33 +237,49 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: CEK GILIRAN
+    -- FUNGSI GAIB: RADAR KEYBOARD (CEK GILIRAN)
     -- ==========================================
-    local function IsItMyTurn()
+    -- Alih-alih mengecek 1 tombol, kita cek apakah ada deretan keyboard (Q,W,E, MASUK) di layar.
+    -- Jika keyboard muncul, berarti itu mutlak giliran kita!
+    local function IsKeyboardVisible()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
+        
+        local keyCount = 0
         for _, gui in ipairs(pg:GetDescendants()) do
             if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 and gui.AbsolutePosition.Y > 0 then
                 local text = DeepFindButtonText(gui)
-                if text == "MASUK" or text == "ENTER" or text == "JAWAB" or text == "SUBMIT" then
-                    return true
+                if text == "Q" or text == "W" or text == "E" or text == "MASUK" then
+                    keyCount = keyCount + 1
                 end
             end
         end
-        return false
+        return keyCount >= 2 
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: AUTO TYPE & ENTER
+    -- FUNGSI GAIB: AUTO TYPE & ENTER (DENGAN PENGHAPUSAN MEMORI)
     -- ==========================================
     local function TypeAndSubmitWord(word)
         local wordUpper = string.upper(word)
+        
+        -- MENCEGAH BUG "MSALAM": Spam tombol Backspace virtual 10x sebelum ngetik!
+        pcall(function()
+            local vim = game:GetService("VirtualInputManager")
+            if vim then
+                for _ = 1, 10 do
+                    vim:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                    task.wait(0.01)
+                    vim:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                end
+            end
+        end)
+        task.wait(0.2) -- Jeda biar text box bersih
         
         for i = 1, #wordUpper do
             local char = string.sub(wordUpper, i, i)
             local success = clickUIButton(char)
             
-            -- Jika layar tidak diklik, paksa tekan keyboard internal Roblox
             if not success then
                 pcall(function()
                     local vim = game:GetService("VirtualInputManager")
@@ -282,8 +295,6 @@ return function(WindUI, TebakKataTab)
         end
         
         task.wait(0.1)
-        
-        -- Klik Enter
         local enterSuccess = clickUIButton("MASUK") or clickUIButton("ENTER") or clickUIButton("JAWAB")
         if not enterSuccess then
             pcall(function()
@@ -307,15 +318,14 @@ return function(WindUI, TebakKataTab)
         local hurufnyaLabel = nil
         local validLabels = {}
         
-        -- Kumpulkan teks dan cari kata "HURUFNYA"
         for _, gui in ipairs(pg:GetDescendants()) do
             if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
                 local rawText = string.gsub(gui.Text, "<[^>]+>", "")
                 local textUpper = string.upper(rawText)
                 
-                -- Cek kalau kalimat digabung "HURUFNYA ADALAH: IS"
                 local exactMatch = string.match(textUpper, "HURUFNYA[^:]*:%s*([A-Z]+)")
-                if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 4 then
+                -- Batasi tangkapan maksimal 3 huruf (Sesuai aturan game)
+                if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 3 then
                     return exactMatch
                 end
                 
@@ -324,8 +334,8 @@ return function(WindUI, TebakKataTab)
                 end
                 
                 local stripped = string.gsub(textUpper, "%s+", "")
-                -- Masukkan huruf kapital dengan panjang 1-4 ke daftar calon soal
-                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
+                -- Mencegah bug "ITEM", hanya proses teks yang panjangnya 1 sampai 3 huruf!
+                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 3 then
                     if not BLACKLIST_PROMPT[stripped] then
                         table.insert(validLabels, {gui = gui, text = stripped})
                     end
@@ -333,7 +343,6 @@ return function(WindUI, TebakKataTab)
             end
         end
 
-        -- Jika "HURUFNYA" ditemukan dan hurufnya dipisah kotak (Cari Jarak Terdekat)
         if hurufnyaLabel and #validLabels > 0 then
             local bestPrompt = nil
             local minDistance = math.huge
@@ -343,7 +352,6 @@ return function(WindUI, TebakKataTab)
                 local itemPos = item.gui.AbsolutePosition + (item.gui.AbsoluteSize / 2)
                 local dist = (anchorPos - itemPos).Magnitude
                 
-                -- Ambil huruf yang lokasinya paling berdekatan dengan tulisan "HURUFNYA"
                 if dist < minDistance and dist < 300 then
                     minDistance = dist
                     bestPrompt = item.text
@@ -373,31 +381,28 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (PERBAIKAN BUG MACET)
+    -- LOGIKA UTAMA BOT (STATE MACHINE SEMPURNA)
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
             local lastPrompt = ""
-            local isPlayingMatch = false
-            local answeredThisTurn = false
-            local idleTime = 0
             
             while isBotActive do
                 ScanOpponentWords()
                 local currentPrompt = GetCurrentPrompt()
                 
                 if currentPrompt and currentPrompt ~= "" then
-                    isPlayingMatch = true
-                    idleTime = 0
                     
-                    if IsItMyTurn() then
-                        -- Jika belum ngetik di giliran ini
-                        if not answeredThisTurn then
+                    -- CEK APAKAH INI GILIRAN KITA? (Keyboard muncul di layar)
+                    if IsKeyboardVisible() then
+                        -- Jika ini giliran kita, dan promptnya belum dijawab di giliran ini
+                        if currentPrompt ~= lastPrompt then
                             UpdateStatus("GILIRANMU! Menjawab: " .. currentPrompt)
                             
                             local possibleWords = {}
                             for _, word in ipairs(Dictionary) do
-                                if string.match(word, currentPrompt) and not usedWords[word] then
+                                -- MENCEGAH BUG "MSALAM" -> Kata HARUS BERAWALAN (Prefix) dengan soal
+                                if string.match(word, "^" .. currentPrompt) and not usedWords[word] then
                                     table.insert(possibleWords, word)
                                 end
                             end
@@ -408,37 +413,40 @@ return function(WindUI, TebakKataTab)
                                 
                                 task.wait(0.3) 
                                 TypeAndSubmitWord(chosenWord)
-                                answeredThisTurn = true 
-                                lastPrompt = currentPrompt -- Kunci kata ini
+                                
+                                -- Kunci prompt ini agar bot tidak ngetik 2x di 1 giliran
+                                lastPrompt = currentPrompt 
                                 task.wait(1.5) 
                             else
                                 UpdateStatus("Kata habis untuk: " .. currentPrompt)
+                                lastPrompt = currentPrompt 
                             end
                         else
                             UpdateStatus("Menunggu Lawan Mengetik...")
                         end
+                        
                     else
-                        -- BUKAN GILIRAN KITA (TAPI SOAL MUNCUL)
-                        answeredThisTurn = false 
-                        lastPrompt = "" -- Buka kunci pikiran agar siap ngetik begitu giliran tiba!
-                        UpdateStatus("Menunggu Giliran (Soal: " .. currentPrompt .. ")")
+                        -- BUKAN GILIRAN KITA!
+                        UpdateStatus("Menunggu Giliran (Soal Lawan: " .. currentPrompt .. ")")
+                        
+                        -- Jika prompt berubah saat giliran lawan, kita BUKA KUNCI lastPrompt.
+                        -- Sehingga saat giliran kembali ke kita, otak bot sudah "segar" dan tidak mogok!
+                        if currentPrompt ~= lastPrompt then
+                            lastPrompt = "" 
+                        end
                     end
                 else
-                    if isPlayingMatch then
-                        idleTime = idleTime + 0.2
-                        if idleTime > 18 then
-                            usedWords = {} 
-                            isPlayingMatch = false
-                            answeredThisTurn = false
-                            UpdateStatus("Menunggu Game Dimulai...")
-                            if FloatingUI.Enabled then
-                                WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori direset!", Duration=2})
-                            end
-                        end
-                    else
+                    -- TIDAK ADA SOAL DI LAYAR = MATCH SELESAI / LOBBY
+                    if lastPrompt ~= "" then
+                        usedWords = {} 
+                        lastPrompt = ""
                         UpdateStatus("Menunggu Game Dimulai...")
+                        if FloatingUI.Enabled then
+                            WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori direset!", Duration=2})
+                        end
                     end
                 end
+                
                 task.wait(0.2) 
             end
         end)
@@ -477,8 +485,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V8 - Ultimate)",
-        Desc = "Menghilangkan bug ngetik ganda & Bot mogok jalan. 100% mulus!",
+        Title = "Bot Tebak Kata (V9 - Flawless)",
+        Desc = "100% Anti Macet. Bot akan selalu mencari Awalan kata yang akurat dan menghapus textbox secara otomatis sebelum mengetik.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
