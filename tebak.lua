@@ -35,7 +35,7 @@ return function(WindUI, TebakKataTab)
         XENON XILOFON
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA
-        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT
+        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA
     ]=]
 
     local Dictionary = {}
@@ -45,19 +45,15 @@ return function(WindUI, TebakKataTab)
         DictLookup[word] = true
     end
 
-    -- State Bot
     local usedWords = {}
     local isBotActive = false
     local typingDelay = 0.05 
-    local lastPromptTime = os.clock()
     local botStateStatus = "Menunggu Game Dimulai..."
-    local StatusLabelUI = nil -- Di-assign nanti saat UI dibuat
+    local StatusLabelUI = nil 
 
     local function UpdateStatus(text)
         botStateStatus = text
-        if StatusLabelUI then
-            StatusLabelUI.Text = "Status: " .. text
-        end
+        if StatusLabelUI then StatusLabelUI.Text = "Status: " .. text end
     end
 
     -- ==========================================
@@ -69,7 +65,6 @@ return function(WindUI, TebakKataTab)
     FloatingUI.Enabled = false
     FloatingUI.Parent = (gethui and gethui()) or (pcall(function() return CoreGui.Name end) and CoreGui) or lp.PlayerGui
 
-    -- WIDGET LINGKARAN (TOGGLE BUTTON)
     local CircleWidget = Instance.new("TextButton")
     CircleWidget.Size = UDim2.new(0, 45, 0, 45)
     CircleWidget.Position = UDim2.new(0.5, -22, 0.1, 0)
@@ -87,7 +82,6 @@ return function(WindUI, TebakKataTab)
     WidgetStroke.Thickness = 2
     WidgetStroke.Parent = CircleWidget
 
-    -- PANEL UTAMA
     local MainPanel = Instance.new("Frame")
     MainPanel.Size = UDim2.new(0, 220, 0, 130)
     MainPanel.Position = UDim2.new(0.5, -110, 0.1, 55)
@@ -135,7 +129,6 @@ return function(WindUI, TebakKataTab)
     Instance.new("UICorner", ToggleBotBtn).CornerRadius = UDim.new(0, 6)
     ToggleBotBtn.Parent = MainPanel
 
-    -- CUSTOM SLIDER (Anti Error di Executor)
     local SliderLabel = Instance.new("TextLabel")
     SliderLabel.Size = UDim2.new(1, -10, 0, 15)
     SliderLabel.Position = UDim2.new(0, 5, 0, 85)
@@ -185,9 +178,7 @@ return function(WindUI, TebakKataTab)
     CircleWidget.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isDraggingWidget = false
-            if not hasMoved then
-                MainPanel.Visible = not MainPanel.Visible
-            end
+            if not hasMoved then MainPanel.Visible = not MainPanel.Visible end
         end
     end)
 
@@ -223,25 +214,31 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI GAIB: KLIK UI KEYBOARD & TYPE
+    -- FUNGSI DEEP SCANNER
+    -- ==========================================
+    local function DeepFindButtonText(gui)
+        local text = ""
+        if gui:IsA("TextButton") or gui:IsA("TextLabel") then text = gui.Text end
+        if text == "" or string.match(text, "^%s*$") then
+            local lbl = gui:FindFirstChildOfClass("TextLabel")
+            if lbl then text = lbl.Text end
+        end
+        if text == "" or string.match(text, "^%s*$") then text = gui.Name end
+        return string.upper(string.gsub(string.gsub(text, "<[^>]+>", ""), "%s+", ""))
+    end
+
+    -- ==========================================
+    -- FUNGSI GAIB: KLIK UI KEYBOARD
     -- ==========================================
     local function clickUIButton(targetText)
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
         
         local tTarget = string.upper(targetText)
+
         for _, gui in ipairs(pg:GetDescendants()) do
             if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible then
-                local text = ""
-                if gui:IsA("TextButton") then text = gui.Text end
-                if text == "" or string.match(text, "^%s*$") then
-                    local lbl = gui:FindFirstChildOfClass("TextLabel")
-                    if lbl then text = lbl.Text end
-                end
-                if text == "" or string.match(text, "^%s*$") then text = gui.Name end
-                
-                text = string.gsub(text, "<[^>]+>", "")
-                text = string.upper(string.gsub(text, "%s+", "")) 
+                local text = DeepFindButtonText(gui)
                 
                 local isMatch = false
                 if string.len(tTarget) == 1 then
@@ -278,6 +275,7 @@ return function(WindUI, TebakKataTab)
                             for _, conn in pairs(getconnections(gui.Activated)) do conn:Fire() end
                         end)
                     end
+                    
                     return true
                 end
             end
@@ -285,11 +283,16 @@ return function(WindUI, TebakKataTab)
         return false
     end
 
+    -- ==========================================
+    -- FUNGSI GAIB: AUTO TYPE & ENTER
+    -- ==========================================
     local function TypeAndSubmitWord(word)
         local wordUpper = string.upper(word)
+        
         for i = 1, #wordUpper do
             local char = string.sub(wordUpper, i, i)
             clickUIButton(char)
+            
             pcall(function()
                 local vim = game:GetService("VirtualInputManager")
                 local keycode = Enum.KeyCode[char]
@@ -319,28 +322,36 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: MENCARI SOAL & ANTI DUPLIKAT
+    -- FUNGSI SCANNER: MENCARI SOAL
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return nil end
         
+        local bestPrompt = nil
+        local largestSize = 0
+
         for _, gui in ipairs(pg:GetDescendants()) do
             if gui:IsA("TextLabel") and gui.Visible then
-                local cleanText = string.gsub(gui.Text, "<[^>]+>", "")
-                local textUpper = string.upper(cleanText)
+                local rawText = string.gsub(gui.Text, "<[^>]+>", "")
+                local textUpper = string.upper(rawText)
                 
-                local prompt = string.match(textUpper, "HURUFNYA ADALAH:%s*([A-Z]+)")
-                if prompt then return prompt end
+                local promptMatch = string.match(textUpper, "HURUFNYA[^:]*:%s*([A-Z]+)")
+                if promptMatch then
+                    return promptMatch
+                end
                 
-                if string.match(textUpper, "^[A-Z]+$") and string.len(textUpper) >= 1 and string.len(textUpper) <= 4 then
-                    if gui.TextSize > 40 or gui.AbsoluteSize.Y > 40 then
-                        return textUpper
+                local stripped = string.gsub(textUpper, "%s+", "")
+                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
+                    local size = gui.TextSize or (gui.AbsoluteSize and gui.AbsoluteSize.Y) or 0
+                    if size > 30 and size > largestSize then
+                        largestSize = size
+                        bestPrompt = stripped
                     end
                 end
             end
         end
-        return nil
+        return bestPrompt
     end
 
     local function ScanOpponentWords()
@@ -348,10 +359,9 @@ return function(WindUI, TebakKataTab)
         if pg then
             for _, gui in ipairs(pg:GetDescendants()) do
                 if gui:IsA("TextLabel") and gui.Visible then
-                    if not string.match(string.upper(gui.Text), "HURUFNYA") then
-                        local cleanedText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
-                        cleanedText = string.gsub(cleanedText, "%s+", "")
-                        
+                    local textUpper = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
+                    if not string.match(textUpper, "HURUFNYA") then
+                        local cleanedText = string.gsub(textUpper, "%s+", "")
                         if string.len(cleanedText) >= 2 and DictLookup[cleanedText] then
                             usedWords[cleanedText] = true
                         end
@@ -362,19 +372,21 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (DENGAN AUTO-RESET MEMORI)
+    -- LOGIKA UTAMA BOT (AUTO RESET 18 DETIK)
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
             local lastPrompt = ""
+            local isPlayingMatch = false
+            local idleTime = 0
             
             while isBotActive do
                 ScanOpponentWords()
                 local currentPrompt = GetCurrentPrompt()
                 
                 if currentPrompt and currentPrompt ~= "" then
-                    -- Match sedang berjalan!
-                    lastPromptTime = os.clock()
+                    isPlayingMatch = true
+                    idleTime = 0
                     UpdateStatus("Sedang Bermain! (Mencari: " .. currentPrompt .. ")")
                     
                     if currentPrompt ~= lastPrompt then
@@ -389,26 +401,33 @@ return function(WindUI, TebakKataTab)
                             local randomIndex = math.random(1, #possibleWords)
                             local chosenWord = possibleWords[randomIndex]
                             
-                            task.wait(0.5)
+                            task.wait(0.5) 
                             TypeAndSubmitWord(chosenWord)
                             lastPrompt = currentPrompt
                             task.wait(2.0) 
                         else
-                            UpdateStatus("Tidak ada kata di memori untuk: " .. currentPrompt)
+                            UpdateStatus("Kata habis untuk: " .. currentPrompt)
                             lastPrompt = currentPrompt 
                         end
                     end
                 else
-                    -- Jika prompt tidak terdeteksi selama lebih dari 10 detik, asumsi match selesai!
-                    if os.clock() - lastPromptTime > 10 then
-                        if next(usedWords) ~= nil then
-                            usedWords = {} -- Reset memori otomatis!
-                            WindUI:Notify({Title="Match Selesai", Content="Memori bot telah di-reset otomatis untuk match baru!", Duration=2})
+                    if isPlayingMatch then
+                        idleTime = idleTime + 0.2
+                        -- Diubah menjadi 18 DETIK sesuai permintaan
+                        if idleTime > 18 then
+                            usedWords = {} 
+                            isPlayingMatch = false
+                            lastPrompt = ""
+                            UpdateStatus("Menunggu Match Dimulai...")
+                            if FloatingUI.Enabled then
+                                WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori bot direset otomatis!", Duration=2})
+                            end
                         end
+                    else
                         UpdateStatus("Menunggu Match Dimulai...")
-                        lastPrompt = ""
                     end
                 end
+                
                 task.wait(0.2) 
             end
         end)
@@ -422,7 +441,6 @@ return function(WindUI, TebakKataTab)
         if isBotActive then
             ToggleBotBtn.Text = "BOT: ON"
             ToggleBotBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
-            lastPromptTime = os.clock()
             UpdateStatus("Mendeteksi game...")
             BotLoop()
         else
@@ -433,11 +451,11 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- TAB WIND UI (HANYA TOMBOL OPEN PANEL)
+    -- TAB WIND UI UTAMA
     -- ==========================================
     TebakKataTab:Paragraph({
-        Title = "Tebak Kata Bot System",
-        Desc = "Sistem telah dipindahkan ke Floating UI khusus agar lebih aman dari anti-cheat dan menghindari bug eksekutor.",
+        Title = "Bot Tebak Kata (V4)",
+        Desc = "Sistem berjalan di Floating Panel khusus dengan Auto-Reset 18 Detik.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
@@ -446,7 +464,7 @@ return function(WindUI, TebakKataTab)
         Callback = function()
             FloatingUI.Enabled = not FloatingUI.Enabled
             if FloatingUI.Enabled then
-                WindUI:Notify({Title="Panel Terbuka", Content="Silakan klik tombol ⌨️ (keyboard) di layar.", Duration=2})
+                WindUI:Notify({Title="Panel Terbuka", Content="Silakan klik icon ⌨️ di layar.", Duration=2})
             end
         end
     })
