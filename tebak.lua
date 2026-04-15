@@ -74,8 +74,8 @@ return function(WindUI, TebakKataTab)
     local typingDelay = 0.05 
     local botStateStatus = "Standby..."
     local StatusLabelUI = nil 
-    local isTyping = false 
 
+    -- Blokir Kata UI (Agar bot tidak baca tombol menu sebagai soal)
     local BLACKLIST_PROMPT = {
         ["ON"]=true, ["OFF"]=true, ["BOT"]=true, ["UI"]=true, ["KITA"]=true, ["PILIH"]=true, 
         ["ITEM"]=true, ["MODE"]=true, ["SHOP"]=true, ["MENU"]=true, ["NORMAL"]=true, 
@@ -174,71 +174,93 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI GAIB: ULTIMATE UNIVERSAL CLICKER
-    -- Menerapkan kekuatan klik "Masuk" ke semua tombol (A-Z)
+    -- FUNGSI GAIB: DEEP FIND TEXT (Menembus TextLabel dalam ImageButton)
     -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
-        if gui:IsA("TextButton") or gui:IsA("TextLabel") then text = gui.Text end
-        if text == "" or string.match(text, "^%s*$") then
-            local lbl = gui:FindFirstChildOfClass("TextLabel")
-            if lbl then text = lbl.Text end
+        if gui:IsA("TextButton") or gui:IsA("TextLabel") then 
+            text = gui.Text or ""
         end
-        if text == "" or string.match(text, "^%s*$") then text = gui.Name end
+        
+        -- Jika teks kosong, cari dari anak-anaknya (misal: TextLabel di dalam ImageButton)
+        if text == "" or string.match(text, "^%s*$") then
+            for _, desc in ipairs(gui:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text and desc.Text ~= "" then
+                    text = desc.Text
+                    break
+                end
+            end
+        end
+        
+        -- Terakhir, cek nama
+        if text == "" or string.match(text, "^%s*$") then 
+            text = gui.Name or "" 
+        end
+        
         return string.upper(string.gsub(string.gsub(text, "<[^>]+>", ""), "%s+", ""))
     end
 
-    local function IsInsideButton(gui)
-        local parent = gui.Parent
-        for _ = 1, 4 do
-            if parent and (parent:IsA("TextButton") or parent:IsA("ImageButton")) then
-                return true
-            end
-            parent = parent and parent.Parent
-        end
-        return false
-    end
-
+    -- ==========================================
+    -- FUNGSI GAIB: STRICT VALID GUI SCANNER (Mencegah Klik Bayangan/Spam)
+    -- ==========================================
     local function GetValidGUIs()
         local valid = {}
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return valid end
         
-        for _, gui in ipairs(pg:GetDescendants()) do
-            -- Abaikan UI Bot kita sendiri agar tidak terbaca/diklik
-            if not gui:FindFirstAncestor("SYNC_TebakKataGUI") then
-                table.insert(valid, gui)
+        for _, screenGui in ipairs(pg:GetChildren()) do
+            -- SYARAT MUTLAK: ScreenGui harus Enabled agar tidak klik tombol bayangan di background
+            if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+                for _, gui in ipairs(screenGui:GetDescendants()) do
+                    -- Syarat ukuran dan posisi logis (Tidak disembunyikan/0 ukuran)
+                    if gui:IsA("GuiObject") and gui.Visible and gui.AbsoluteSize.X > 0 and gui.AbsoluteSize.Y > 0 then
+                        
+                        -- Cek apakah ada Parent yang invisible (Roblox bug rendering)
+                        local isVisible = true
+                        local parent = gui.Parent
+                        for _=1, 5 do
+                            if parent and parent:IsA("GuiObject") and not parent.Visible then
+                                isVisible = false
+                                break
+                            end
+                            parent = parent and parent.Parent
+                        end
+                        
+                        if isVisible then
+                            table.insert(valid, gui)
+                        end
+                    end
+                end
             end
         end
         return valid
     end
 
-    local function UltimateClick(gui)
+    -- ==========================================
+    -- FUNGSI GAIB: KLIK UI KEYBOARD (PURE TOUCH EVENT)
+    -- ==========================================
+    local function SafeClick(gui)
         local success = false
         
-        -- 1. GetConnections (Paling kuat jika eksekutor support)
+        -- METODE 1: GetConnections (Paling senyap dan aman)
         if typeof(getconnections) == "function" then
             pcall(function()
-                local clicked = false
-                for _, c in ipairs(getconnections(gui.MouseButton1Click)) do c:Fire() clicked = true end
-                for _, c in ipairs(getconnections(gui.Activated)) do c:Fire() clicked = true end
-                if clicked then success = true end
+                local conns = getconnections(gui.MouseButton1Click)
+                if conns and #conns > 0 then conns[1]:Fire(); success = true
+                else
+                    local actConns = getconnections(gui.Activated)
+                    if actConns and #actConns > 0 then actConns[1]:Fire(); success = true end
+                end
             end)
         end
         
-        -- 2. FireSignal 
-        local fs = getgenv().firesignal or firesignal
-        if not success and typeof(fs) == "function" then
-            pcall(function() 
-                fs(gui.MouseButton1Click)
-                fs(gui.MouseButton1Down)
-                fs(gui.MouseButton1Up)
-                fs(gui.Activated)
-                success = true
-            end)
+        -- METODE 2: Firesignal
+        if not success and typeof(firesignal) == "function" then
+            pcall(function() firesignal(gui.MouseButton1Click) end)
+            success = true
         end
         
-        -- 3. Touch Event (Paling Aman untuk Mobile, tanpa Mouse Icon)
+        -- METODE 3: Touch Event Murni (Tanpa Mouse Icon)
         if not success then
             pcall(function()
                 local vim = game:GetService("VirtualInputManager")
@@ -248,49 +270,54 @@ return function(WindUI, TebakKataTab)
                     local y = gui.AbsolutePosition.Y + (gui.AbsoluteSize.Y / 2) + inset.Y
                     
                     vim:SendTouchEvent(1, 0, x, y)
-                    task.wait(0.01)
+                    task.wait(0.02)
                     vim:SendTouchEvent(1, 2, x, y)
                     success = true
                 end
             end)
         end
-        
         return success
     end
 
-    local function clickUIButton(targetText)
-        local tTarget = string.upper(targetText)
-        for _, gui in ipairs(GetValidGUIs()) do
-            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
-                local text = DeepFindButtonText(gui)
-                local isMatch = false
+    local function ClickEnter(gui)
+        -- Eksekusi brutal untuk tombol Enter
+        pcall(function()
+            local vim = game:GetService("VirtualInputManager")
+            if vim then
+                local inset = game:GetService("GuiService"):GetGuiInset()
+                local x = gui.AbsolutePosition.X + (gui.AbsoluteSize.X / 2)
+                local y = gui.AbsolutePosition.Y + (gui.AbsoluteSize.Y / 2) + inset.Y
                 
-                if string.len(tTarget) == 1 then
-                    if text == tTarget then isMatch = true end
-                else
-                    if text == tTarget or string.match(text, tTarget) then isMatch = true end
-                end
-
-                if isMatch then
-                    UltimateClick(gui)
-                    return true
-                end
+                vim:SendTouchEvent(1, 0, x, y)
+                task.wait(0.02)
+                vim:SendTouchEvent(1, 2, x, y)
             end
+        end)
+        
+        if typeof(getconnections) == "function" then
+            pcall(function()
+                for _, c in ipairs(getconnections(gui.MouseButton1Click)) do c:Fire() end
+                for _, c in ipairs(getconnections(gui.Activated)) do c:Fire() end
+            end)
         end
-        return false
+        
+        local fs = getgenv().firesignal or firesignal
+        if typeof(fs) == "function" then
+            pcall(function() fs(gui.MouseButton1Click) end)
+        end
     end
 
     local function FastUIBackspace()
         local wiped = false
         for _, gui in ipairs(GetValidGUIs()) do
-            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
+            if gui:IsA("TextButton") or gui:IsA("ImageButton") then
                 local r, g, b = gui.BackgroundColor3.R, gui.BackgroundColor3.G, gui.BackgroundColor3.B
                 local text = DeepFindButtonText(gui)
                 local name = string.upper(gui.Name)
                 
                 if (r > 0.7 and g < 0.4 and b < 0.4) or text == "X" or text == "DEL" or text == "HAPUS" or string.find(name, "CLEAR") or string.find(name, "BACK") then
                     for i = 1, 8 do 
-                        UltimateClick(gui)
+                        ClickEnter(gui) 
                         task.wait(0.01)
                     end
                     wiped = true
@@ -299,7 +326,6 @@ return function(WindUI, TebakKataTab)
             end
         end
         
-        -- Fallback VIM Physical Keyboard
         if not wiped then
             pcall(function()
                 local vim = game:GetService("VirtualInputManager")
@@ -315,31 +341,32 @@ return function(WindUI, TebakKataTab)
     end
 
     local function IsKeyboardVisible()
+        local masukFound = false
+        local letterFound = false
         for _, gui in ipairs(GetValidGUIs()) do
-            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
+            if gui:IsA("TextButton") or gui:IsA("ImageButton") then
                 local text = DeepFindButtonText(gui)
                 if text == "MASUK" or text == "JAWAB" or text == "ENTER" then
-                    return true
+                    masukFound = true
+                elseif text == "Q" or text == "W" or text == "E" then
+                    letterFound = true
                 end
             end
         end
-        return false
+        return masukFound and letterFound
     end
 
     -- ==========================================
     -- FUNGSI GAIB: SMART SUFFIX TYPER (PEMOTONG KATA SEMPURNA)
     -- ==========================================
     local function TypeAndSubmitWord(word, prompt)
-        if isTyping then return end
-        isTyping = true
-        
         local wordUpper = string.upper(word)
         local promptUpper = string.upper(prompt or "")
         
         FastUIBackspace()
         task.wait(0.1)
 
-        -- PEMOTONG KATA
+        -- KITA HANYA NGETIK SISA HURUFNYA
         local stringToType = wordUpper
         if promptUpper ~= "" and string.sub(wordUpper, 1, string.len(promptUpper)) == promptUpper then
             stringToType = string.sub(wordUpper, string.len(promptUpper) + 1)
@@ -347,39 +374,89 @@ return function(WindUI, TebakKataTab)
         
         WindUI:Notify({Title="Bot Eksekusi", Content="Kata: " .. wordUpper .. " | Sisa: " .. stringToType, Duration=1.5})
         
+        -- Cari & Klik Huruf A-Z
         for i = 1, #stringToType do
             local char = string.sub(stringToType, i, i)
-            clickUIButton(char)
-            -- Jeda sangat penting agar tidak spam "AAAA"
-            task.wait(0.05 + typingDelay) 
+            local clicked = false
+            
+            for _, gui in ipairs(GetValidGUIs()) do
+                if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+                    local text = DeepFindButtonText(gui)
+                    if text == char then
+                        SafeClick(gui)
+                        clicked = true
+                        break
+                    end
+                end
+            end
+            
+            -- Fallback physical key
+            if not clicked then
+                pcall(function()
+                    local vim = game:GetService("VirtualInputManager")
+                    if vim then
+                        local keycode = Enum.KeyCode[char]
+                        if keycode then
+                            vim:SendKeyEvent(true, keycode, false, game)
+                            task.wait(0.01)
+                            vim:SendKeyEvent(false, keycode, false, game)
+                        end
+                    end
+                end)
+            end
+            task.wait(typingDelay)
         end
         
         task.wait(0.1)
-        clickUIButton("MASUK")
-        clickUIButton("ENTER")
-        clickUIButton("JAWAB")
         
-        isTyping = false
+        -- Cari & Klik Enter
+        local enterClicked = false
+        for _, gui in ipairs(GetValidGUIs()) do
+            if gui:IsA("TextButton") or gui:IsA("ImageButton") then
+                local text = DeepFindButtonText(gui)
+                if text == "MASUK" or text == "JAWAB" or text == "ENTER" then
+                    ClickEnter(gui)
+                    enterClicked = true
+                    break
+                end
+            end
+        end
+        
+        if not enterClicked then
+            pcall(function()
+                local vim = game:GetService("VirtualInputManager")
+                if vim then
+                    vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+                    task.wait(0.02)
+                    vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+                end
+            end)
+        end
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: X-AXIS COMBINER (CENTER SCREEN LOCK)
-    -- Mencegah salah baca "XI" dari sudut layar
+    -- FUNGSI SCANNER: X-AXIS COMBINER (Penyatu Huruf Terpisah)
     -- ==========================================
     local function GetCurrentPrompt()
         local hurufnyaY = nil
         local hurufnyaX = nil
+        local validGUIs = GetValidGUIs()
         
-        -- Cari tulisan "HURUFNYA" sebagai titik jangkar (anchor)
-        for _, gui in ipairs(GetValidGUIs()) do
-            if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
+        for _, gui in ipairs(validGUIs) do
+            if gui:IsA("TextLabel") then
                 local rawText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
                 
-                if not IsInsideButton(gui) then
-                    local exactMatch = string.match(rawText, "HURUFNYA[^:]*:%s*([A-Z]+)")
-                    if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 4 then 
-                        return exactMatch 
-                    end
+                -- Jangan baca tombol keyboard sebagai soal
+                local isInsideButton = false
+                local p = gui.Parent
+                for _=1, 3 do
+                    if p and (p:IsA("TextButton") or p:IsA("ImageButton")) then isInsideButton=true break end
+                    p = p and p.Parent
+                end
+                
+                if not isInsideButton then
+                    local exact = string.match(rawText, "HURUFNYA[^:]*:%s*([A-Z]+)")
+                    if exact and string.len(exact) >= 1 and string.len(exact) <= 4 then return exact end
                     
                     if string.find(rawText, "HURUFNYA") then
                         hurufnyaY = gui.AbsolutePosition.Y
@@ -389,45 +466,48 @@ return function(WindUI, TebakKataTab)
                 end
             end
         end
-
-        -- Jika jangkar "HURUFNYA" ketemu, cari kotak huruf di sebelahnya!
+        
         if hurufnyaY then
-            local promptLetters = {}
-            for _, gui in ipairs(GetValidGUIs()) do
-                if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
+            local letters = {}
+            for _, gui in ipairs(validGUIs) do
+                if gui:IsA("TextLabel") then
                     local rawText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
                     local stripped = string.gsub(rawText, "%s+", "")
                     
-                    if not IsInsideButton(gui) and string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
+                    local isInsideButton = false
+                    local p = gui.Parent
+                    for _=1, 3 do
+                        if p and (p:IsA("TextButton") or p:IsA("ImageButton")) then isInsideButton=true break end
+                        p = p and p.Parent
+                    end
+                    
+                    if not isInsideButton and string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
                         if not BLACKLIST_PROMPT[stripped] then
-                            -- KUNCIAN: Harus sejajar Y-Axis (toleransi 30px) dan berada di KANAN tulisan "Hurufnya"
-                            local diffY = math.abs(gui.AbsolutePosition.Y - hurufnyaY)
-                            if diffY < 30 and gui.AbsolutePosition.X >= (hurufnyaX - 10) then
-                                table.insert(promptLetters, {text = stripped, x = gui.AbsolutePosition.X})
+                            -- Harus sejajar dan di sebelah kanan teks HURUFNYA
+                            if math.abs(gui.AbsolutePosition.Y - hurufnyaY) < 30 and gui.AbsolutePosition.X >= (hurufnyaX - 20) then
+                                table.insert(letters, {t=stripped, x=gui.AbsolutePosition.X})
                             end
                         end
                     end
                 end
             end
             
-            if #promptLetters > 0 then
-                -- Urutkan kotak dari kiri ke kanan (agar L, A, M menjadi LAM)
-                table.sort(promptLetters, function(a, b) return a.x < b.x end)
-                local finalPrompt = ""
-                local seenTexts = {}
-                
-                for _, letter in ipairs(promptLetters) do
-                    local isShadow = false
-                    for _, seen in ipairs(seenTexts) do
-                        if math.abs(letter.x - seen.x) < 10 and letter.text == seen.text then isShadow = true break end
+            if #letters > 0 then
+                table.sort(letters, function(a,b) return a.x < b.x end)
+                local final = ""
+                local seen = {}
+                for _, l in ipairs(letters) do
+                    local shadow = false
+                    for _, s in ipairs(seen) do
+                        if math.abs(l.x - s.x) < 10 and l.t == s.t then shadow = true break end
                     end
-                    if not isShadow then
-                        finalPrompt = finalPrompt .. letter.text
-                        table.insert(seenTexts, letter)
+                    if not shadow then
+                        final = final .. l.t
+                        table.insert(seen, l)
                     end
                 end
-                if string.len(finalPrompt) > 4 then finalPrompt = string.sub(finalPrompt, 1, 4) end
-                return finalPrompt
+                if string.len(final) > 4 then final = string.sub(final, 1, 4) end
+                return final
             end
         end
         return nil
@@ -435,7 +515,7 @@ return function(WindUI, TebakKataTab)
 
     local function ScanOpponentWords()
         for _, gui in ipairs(GetValidGUIs()) do
-            if gui:IsA("TextLabel") and gui.Visible then
+            if gui:IsA("TextLabel") then
                 local textUpper = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
                 if not string.match(textUpper, "HURUFNYA") then
                     local cleanedText = string.gsub(textUpper, "%s+", "")
@@ -448,7 +528,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (FAST SELF-CORRECTING AI)
+    -- LOGIKA UTAMA BOT (THE APEX PREDATOR)
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
@@ -456,9 +536,10 @@ return function(WindUI, TebakKataTab)
             local answeredThisTurn = false
             local answerTime = 0
             local chosenWordThisTurn = ""
+            local isProcessing = false 
             
             while isBotActive do
-                if not isTyping then
+                if not isProcessing then
                     ScanOpponentWords()
                     local myTurn = IsKeyboardVisible()
                     
@@ -467,6 +548,7 @@ return function(WindUI, TebakKataTab)
                         
                         if currentPrompt then
                             if currentPrompt ~= lastPrompt then
+                                isProcessing = true
                                 UpdateStatus("GILIRAN KITA! Soal: " .. currentPrompt)
                                 
                                 local possibleWords = {}
@@ -499,15 +581,18 @@ return function(WindUI, TebakKataTab)
                                     answeredThisTurn = true
                                     answerTime = os.clock()
                                 end
+                                isProcessing = false
                             else
                                 if answeredThisTurn then
-                                    -- KOREKSI SUPER CEPAT 1.0 DETIK
+                                    -- KOREKSI SUPER CEPAT (1.0 DETIK)
                                     if os.clock() - answerTime > 1.0 then
+                                        isProcessing = true
                                         UpdateStatus("Kata Ditolak! Menghapus...")
                                         FastUIBackspace()
                                         lastPrompt = ""
                                         answeredThisTurn = false
                                         task.wait(0.2)
+                                        isProcessing = false
                                     else
                                         UpdateStatus("Menunggu verifikasi...")
                                     end
@@ -565,8 +650,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V23 - Apex Predator)",
-        Desc = "100% Anti Macet. Menggunakan Ultimate Universal Clicker untuk mengetik huruf dan enter dengan kekuatan yang sama.",
+        Title = "Bot Tebak Kata (V24 - Perfect Mastery)",
+        Desc = "100% Anti Bug. Dilengkapi dengan Strict Visibility Check yang mencegah bot menekan UI yang disembunyikan game.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
