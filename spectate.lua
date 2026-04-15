@@ -203,7 +203,7 @@ return function(WindUI, OptionalTab)
     OptionalTab:Divider()
     OptionalTab:Paragraph({
         Title = "👻 Ghost TP Fly Panel",
-        Desc = "Tubuh aslimu akan diam di tempat (aman). Rohmu terbang menembus map mencari spot. Klik Teleport untuk berpindah ke lokasi roh.",
+        Desc = "Tubuh aslimu akan diam mematung dengan aman. Rohmu akan keluar dan terbang menembus map. Klik Teleport untuk memindahkan tubuh aslimu ke lokasi roh.",
         Color = Color3.fromHex("#a042f5")
     })
 
@@ -230,7 +230,7 @@ return function(WindUI, OptionalTab)
     Instance.new("UIStroke", CircleGhost).Thickness = 2
 
     local PanelGhost = Instance.new("Frame")
-    PanelGhost.Size = UDim2.new(0, 220, 0, 180) -- Lebih tinggi untuk tombol TP
+    PanelGhost.Size = UDim2.new(0, 220, 0, 180) 
     PanelGhost.Position = UDim2.new(0.5, -110, 0.5, -90)
     PanelGhost.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
     PanelGhost.Visible = false
@@ -345,17 +345,19 @@ return function(WindUI, OptionalTab)
             local realHRP = lp.Character.HumanoidRootPart
             local realHum = lp.Character:FindFirstChildOfClass("Humanoid")
             
-            -- Jika menekan tombol Teleport
+            -- Jika menekan tombol Teleport, pindahkan tubuh asli ke lokasi Roh
             if teleportToGhost and ghostClone and ghostClone:FindFirstChild("HumanoidRootPart") then
                 realHRP.CFrame = ghostClone.HumanoidRootPart.CFrame
             end
             
+            -- Buka kunci (Unanchor) tubuh asli
             realHRP.Anchored = false
             if realHum then
                 camera.CameraSubject = realHum
             end
         end
         
+        -- Hancurkan roh
         if ghostClone then
             ghostClone:Destroy()
             ghostClone = nil
@@ -379,44 +381,59 @@ return function(WindUI, OptionalTab)
 
             if not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
             
-            -- 1. Bekukan Karakter Asli
             local realHRP = lp.Character.HumanoidRootPart
-            realHRP.Anchored = true
+            local realHum = lp.Character:FindFirstChildOfClass("Humanoid")
             
-            -- 2. Cloning Karakter (Membuat Roh Client-Side)
+            -- 1. KLONING ROH (SEBELUM DIBEKUKAN AGAR ROHNYA TIDAK IKUT BEKU)
             local oldArchivable = lp.Character.Archivable
             lp.Character.Archivable = true
             ghostClone = lp.Character:Clone()
             lp.Character.Archivable = oldArchivable
             
-            -- 3. Modifikasi Visual Roh (Putih, Transparan, Tembus Dinding)
+            -- 2. BEKUKAN TUBUH ASLI (Force Idle Pose)
+            if realHum then
+                -- Paksa animasi mendarat agar tidak terlihat mengambang di udara
+                realHum:ChangeState(Enum.HumanoidStateType.Landed)
+            end
+            realHRP.Velocity = Vector3.new(0, 0, 0)
+            realHRP.Anchored = true
+            
+            -- 3. MODIFIKASI VISUAL & FISIK ROH
+            local ghostHRP = ghostClone:FindFirstChild("HumanoidRootPart")
+            local ghostHum = ghostClone:FindFirstChildOfClass("Humanoid")
+            
+            ghostClone.Name = "SYNC_Ghost_" .. lp.Name
+            
+            -- Pastikan Roh tidak nyangkut (Unanchored)
+            if ghostHRP then ghostHRP.Anchored = false end
+            if ghostHum then ghostHum.PlatformStand = true end -- Supaya ga jalan kaki kocak
+            
             for _, v in pairs(ghostClone:GetDescendants()) do
                 if v:IsA("BasePart") then
+                    v.Anchored = false
+                    v.CanCollide = false -- ROH TEMBUS PANDANG & TEMBUS DINDING
                     v.Transparency = 0.5
-                    v.Color = Color3.new(1, 1, 1) -- Warna Putih
-                    v.Material = Enum.Material.ForceField
-                    v.CanCollide = false -- Tembus dinding/objek
+                    v.Color = Color3.new(1, 1, 1) -- Warna Putih Bersinar
+                    v.Material = Enum.Material.Neon -- Efek Glowing
                 elseif v:IsA("Decal") then
                     v.Transparency = 0.5
                 elseif v:IsA("Script") or v:IsA("LocalScript") then
-                    v:Destroy() -- Hapus script agar hantu tidak error/bertabrakan sistem
+                    v:Destroy() -- Cegah script asli mengganggu roh
                 end
             end
             
-            ghostClone.Name = "SYNC_Ghost_" .. lp.Name
             ghostClone.Parent = workspace
             
-            -- 4. Pindahkan Kamera ke Roh
-            local ghostHum = ghostClone:FindFirstChildOfClass("Humanoid")
-            local ghostHRP = ghostClone:FindFirstChild("HumanoidRootPart")
+            -- 4. PINDAHKAN KAMERA KE ROH
             if ghostHum then
-                ghostHum.PlatformStand = true
                 camera.CameraSubject = ghostHum
             end
             
-            -- 5. Tambahkan BodyVelocity ke Roh
+            -- 5. TAMBAHKAN MESIN TERBANG KE ROH
             local bv = Instance.new("BodyVelocity", ghostHRP)
             bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            bv.Velocity = Vector3.new(0, 0, 0)
+            
             local bg = Instance.new("BodyGyro", ghostHRP)
             bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
             bg.P = 10000; bg.D = 100
@@ -426,7 +443,7 @@ return function(WindUI, OptionalTab)
             ToggleGhostBtn.BackgroundColor3 = Color3.fromRGB(160, 66, 245)
             ToggleGhostBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
             
-            -- 6. Loop Terbang Roh dengan Analog Mobile
+            -- 6. LOOP PENGGERAK ROH (SUPPORT ANALOG MOBILE)
             ghostFlyConn = RunService.RenderStepped:Connect(function()
                 if ghostHRP and ghostClone.Parent == workspace then
                     local moveDir = Vector3.new(0,0,0)
@@ -443,9 +460,9 @@ return function(WindUI, OptionalTab)
                 end
             end)
         else
-            -- Matikan tapi KEMBALI KE POSISI ASLI (Cancel)
+            -- Batal, kembali ke tubuh asli
             StopGhostMode(false)
-            WindUI:Notify({Title="Dibatalkan", Content="Roh kembali ke tubuh asli.", Duration=2})
+            WindUI:Notify({Title="Dibatalkan", Content="Kamera kembali ke tubuh asli.", Duration=2})
         end
     end)
 
@@ -453,7 +470,7 @@ return function(WindUI, OptionalTab)
     TeleportGhostBtn.MouseButton1Click:Connect(function()
         if isGhosting then
             StopGhostMode(true)
-            WindUI:Notify({Title="Teleport", Content="Tubuh asli diteleport ke lokasi roh!", Duration=2})
+            WindUI:Notify({Title="Teleport", Content="Tubuh aslimu berpindah ke lokasi roh!", Duration=2})
         else
             WindUI:Notify({Title="Error", Content="Nyalakan Ghost Fly terlebih dahulu!", Duration=2})
         end
@@ -464,7 +481,7 @@ return function(WindUI, OptionalTab)
         Callback = function() GhostUI.Enabled = not GhostUI.Enabled end
     })
 
-    -- Jika pemain mati saat mode Ghost, bersihkan sistem
+    -- Jika pemain mati, bersihkan semua sistem Fly
     lp.CharacterAdded:Connect(function()
         if isGhosting then StopGhostMode(false) end
         if isFlying then ToggleNFlyBtn.Text = "FLY: OFF"; isFlying = false end
