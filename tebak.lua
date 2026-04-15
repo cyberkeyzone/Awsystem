@@ -32,7 +32,6 @@ return function(WindUI, TebakKataTab)
         UANG UAP UBAH UBAN UBAT UBI UCAP UDANG UDARA UJIAN UJUNG UKIR UKUR ULAMA ULANG ULAR ULAT UMAT UMBUR UMUM UMUR UNDANG UNDUR UNGU UNTA UNTUK UNTUNG UPACARA UPAH UPAYA URAT URUS USAH USAHA USIA USIR USUL USUS UTAMA UTARA UTUS UZUR
         VAKSIN VALID VARIASI VAS VERSI VETO VIDEO VILA VIRUS VISI VOKAL VOLUME VONIS VULGAR
         WABAH WADAH WADUK WAFAT WAJAH WAJIB WAKIL WAKTU WALAU WALI WANGI WANITA WARA WARGA WARIS WARNA WARTA WARUNG WASIT WASPADA WATAK WAWANCARA WAYANG WEWENANG WILAYAH WIRAUSAHA WORTEL WUJUD
-        XENON XILOFON XEROX XRAY XTRA XBOX XPERT XPRESS XPLAY XPDC XA XI XO
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI YAKNI YU YI YA
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA ZODIAK ZINC ZIP ZO ZU ZA ZE
         
@@ -51,6 +50,7 @@ return function(WindUI, TebakKataTab)
         KH KHUSUS KHIANAT KHAWATIR KHAS KHATAM KHAYAL KHUTBAH
         
         -- KATA SUSAH / SINGKATAN LAINNYA
+        XBOX XEROX XENON XPDC XTRA XYLITOL XRAY XPANDER XYLOFON XP XPRESS XPERT XA XI XO
         JPN JEPANG JPNN JPRO JPL JP MORGAN JPARK
         MSDOS MSGL MSIB MSIA MSTAR MSH MASIH MSG MSV
         DYNASTY DYAH DYY DYLAN DYNAMITE DYNAMIC DYN
@@ -59,6 +59,7 @@ return function(WindUI, TebakKataTab)
         AKPOL AKPER AKPRIND AKPK AKP AKBP AKBP
         AORTA AORTIK AOI AON AOA AOKI AOU
         BPKB STNK KTP SIM DPR MPR DPD DPRD BNN BKN
+        KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN AYAM AYAT AYAH UPIL UPAH UPA UPACARA KAKI KAKAK KAKEK HARUS HARI HALO LAMPU LAMA LAMBAT
     ]=]
 
     local Dictionary = {}
@@ -73,7 +74,7 @@ return function(WindUI, TebakKataTab)
     local typingDelay = 0.05 
     local botStateStatus = "Standby..."
     local StatusLabelUI = nil 
-    local isTyping = false -- LOCK ANTI SPAM
+    local isTyping = false -- PENGUNCI SPAM KETIK
 
     local BLACKLIST_PROMPT = {
         ["ON"]=true, ["OFF"]=true, ["BOT"]=true, ["UI"]=true, ["KITA"]=true, ["PILIH"]=true, 
@@ -173,7 +174,7 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI GAIB: PENCARI TOMBOL & KLIK
+    -- FUNGSI GAIB: PURE MOBILE TOUCH SYSTEM (NO MOUSE ICON)
     -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
@@ -186,7 +187,7 @@ return function(WindUI, TebakKataTab)
         return string.upper(string.gsub(string.gsub(text, "<[^>]+>", ""), "%s+", ""))
     end
 
-    local function SingleAccurateClick(gui)
+    local function SafeSingleClick(gui)
         local success = false
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
@@ -195,7 +196,7 @@ return function(WindUI, TebakKataTab)
                 local x = gui.AbsolutePosition.X + (gui.AbsoluteSize.X / 2)
                 local y = gui.AbsolutePosition.Y + (gui.AbsoluteSize.Y / 2) + inset.Y
                 
-                -- Hanya 1 sentuhan murni untuk menghindari huruf ganda!
+                -- HANYA TOUCH EVENT UNTUK ANDROID! (Tidak ada mouse event agar icon mouse tidak muncul)
                 vim:SendTouchEvent(1, 0, x, y)
                 task.wait(0.02)
                 vim:SendTouchEvent(1, 2, x, y)
@@ -203,7 +204,6 @@ return function(WindUI, TebakKataTab)
             end
         end)
         
-        -- Fallback if VIM fails
         if not success and typeof(getconnections) == "function" then
             pcall(function()
                 local conns = getconnections(gui.MouseButton1Click)
@@ -224,14 +224,12 @@ return function(WindUI, TebakKataTab)
                 vim:SendTouchEvent(1, 0, x, y)
                 task.wait(0.02)
                 vim:SendTouchEvent(1, 2, x, y)
-                vim:SendMouseButtonEvent(x, y, 0, true, game, 0)
-                task.wait(0.02)
-                vim:SendMouseButtonEvent(x, y, 0, false, game, 0)
             end
         end)
         if typeof(getconnections) == "function" then
             pcall(function()
                 for _, c in ipairs(getconnections(gui.MouseButton1Click)) do c:Fire() end
+                for _, c in ipairs(getconnections(gui.Activated)) do c:Fire() end
             end)
         end
     end
@@ -242,7 +240,7 @@ return function(WindUI, TebakKataTab)
         local tTarget = string.upper(targetText)
         
         for _, screenGui in ipairs(pg:GetChildren()) do
-            if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+            if screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                 for _, gui in ipairs(screenGui:GetDescendants()) do
                     if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
                         local text = DeepFindButtonText(gui)
@@ -255,7 +253,7 @@ return function(WindUI, TebakKataTab)
                         end
                         
                         if isMatch then
-                            if isEnter then BrutalClickEnter(gui) else SingleAccurateClick(gui) end
+                            if isEnter then BrutalClickEnter(gui) else SafeSingleClick(gui) end
                             return true
                         end
                     end
@@ -265,21 +263,28 @@ return function(WindUI, TebakKataTab)
         return false
     end
 
+    -- ==========================================
+    -- FUNGSI GAIB: HAPUS TEKS KILAT MENGGUNAKAN TOMBOL MERAH UI
+    -- ==========================================
     local function FastUIBackspace()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return end
         
         for _, screenGui in ipairs(pg:GetChildren()) do
-            if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+            if screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                 for _, gui in ipairs(screenGui:GetDescendants()) do
                     if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
-                        if gui.BackgroundColor3 == Color3.fromRGB(255, 0, 0) or gui.BackgroundColor3.R > 0.8 then
-                            for i = 1, 5 do BrutalClickEnter(gui); task.wait(0.01) end
-                            return
-                        end
+                        local r, g, b = gui.BackgroundColor3.R, gui.BackgroundColor3.G, gui.BackgroundColor3.B
                         local text = DeepFindButtonText(gui)
-                        if text == "X" or text == "DEL" or text == "HAPUS" then
-                            for i = 1, 5 do BrutalClickEnter(gui); task.wait(0.01) end
+                        local name = string.upper(gui.Name)
+                        
+                        -- Cek tombol Hapus berdasarkan warna MERAH atau Text/Nama
+                        if (r > 0.7 and g < 0.4 and b < 0.4) or text == "X" or text == "DEL" or text == "HAPUS" or string.find(name, "CLEAR") or string.find(name, "BACK") then
+                            -- Tekan 15 KALI SANGAT CEPAT untuk memastikan teks panjang pun bersih total
+                            for i = 1, 15 do 
+                                BrutalClickEnter(gui)
+                                task.wait(0.01)
+                            end
                             return
                         end
                     end
@@ -292,7 +297,7 @@ return function(WindUI, TebakKataTab)
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
         for _, screenGui in ipairs(pg:GetChildren()) do
-            if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+            if screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                 for _, gui in ipairs(screenGui:GetDescendants()) do
                     if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 then
                         local text = DeepFindButtonText(gui)
@@ -307,7 +312,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: SMART SUFFIX TYPER (PEMOTONG KATA SEMPURNA)
+    -- FUNGSI GAIB: SMART SUFFIX TYPER (PEMOTONG KATA) DENGAN THREAD LOCK
     -- ==========================================
     local function TypeAndSubmitWord(word, prompt)
         if isTyping then return end
@@ -316,6 +321,7 @@ return function(WindUI, TebakKataTab)
         local wordUpper = string.upper(word)
         local promptUpper = string.upper(prompt or "")
         
+        -- WAJIB: HAPUS SISA TEXT SEBELUM NGETIK KATA BARU!
         FastUIBackspace()
         task.wait(0.1)
 
@@ -337,20 +343,11 @@ return function(WindUI, TebakKataTab)
         clickUIButton("MASUK", true)
         clickUIButton("ENTER", true)
         
-        pcall(function()
-            local vim = game:GetService("VirtualInputManager")
-            if vim then
-                vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
-                task.wait(0.02)
-                vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
-            end
-        end)
-        
         isTyping = false
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: X-AXIS COMBINER 
+    -- FUNGSI SCANNER: X-AXIS COMBINER
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
@@ -360,12 +357,11 @@ return function(WindUI, TebakKataTab)
         local hurufnyaX = nil
         
         for _, screenGui in ipairs(pg:GetChildren()) do
-            if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+            if screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                 for _, gui in ipairs(screenGui:GetDescendants()) do
                     if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
                         local rawText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
                         
-                        -- Cek Anti Keyboard Button (Jangan baca tombol keyboard sebagai soal)
                         local isInsideButton = false
                         local parent = gui.Parent
                         for _ = 1, 4 do
@@ -393,7 +389,7 @@ return function(WindUI, TebakKataTab)
         if hurufnyaY then
             local promptLetters = {}
             for _, screenGui in ipairs(pg:GetChildren()) do
-                if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+                if screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                     for _, gui in ipairs(screenGui:GetDescendants()) do
                         if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
                             local rawText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
@@ -446,7 +442,7 @@ return function(WindUI, TebakKataTab)
         local pg = lp:FindFirstChild("PlayerGui")
         if pg then
             for _, screenGui in ipairs(pg:GetChildren()) do
-                if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
+                if screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                     for _, gui in ipairs(screenGui:GetDescendants()) do
                         if gui:IsA("TextLabel") and gui.Visible then
                             local textUpper = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
@@ -493,7 +489,7 @@ return function(WindUI, TebakKataTab)
                                 end
                                 
                                 if #possibleWords == 0 then
-                                    UpdateStatus("Kata habis, AI Darurat jalan!")
+                                    UpdateStatus("AI Darurat jalan...")
                                     local emergencySuffixes = {"A", "I", "U", "E", "O", "AN", "NYA", "MU", "S", "NG"}
                                     for _, suf in ipairs(emergencySuffixes) do
                                         table.insert(possibleWords, currentPrompt .. suf)
@@ -508,7 +504,7 @@ return function(WindUI, TebakKataTab)
                                     lastPrompt = currentPrompt
                                     answeredThisTurn = true
                                     answerTime = os.clock() 
-                                    usedWords[chosenWordThisTurn] = true -- Langsung tandai agar tidak loop kata yang sama
+                                    usedWords[chosenWordThisTurn] = true
                                 else
                                     UpdateStatus("Kosakata benar-benar habis!")
                                     lastPrompt = currentPrompt
@@ -519,13 +515,13 @@ return function(WindUI, TebakKataTab)
                                 if answeredThisTurn then
                                     -- KOREKSI SUPER CEPAT 1.0 DETIK
                                     if os.clock() - answerTime > 1.0 then
-                                        UpdateStatus("Kata Ditolak! Ganti kata...")
+                                        UpdateStatus("Kata Ditolak! Menghapus...")
                                         FastUIBackspace()
                                         lastPrompt = ""
                                         answeredThisTurn = false
                                         task.wait(0.2)
                                     else
-                                        UpdateStatus("Menunggu server...")
+                                        UpdateStatus("Menunggu verifikasi...")
                                     end
                                 else
                                     UpdateStatus("Memproses: " .. currentPrompt)
@@ -535,6 +531,7 @@ return function(WindUI, TebakKataTab)
                             UpdateStatus("Mencari soal...")
                         end
                     else
+                        -- JIKA GILIRAN DICURI/SELESAI, BERSIHKAN KUNCIAN!
                         lastPrompt = ""
                         answeredThisTurn = false
                         chosenWordThisTurn = ""
@@ -581,8 +578,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V20 - Ultimate Fix)",
-        Desc = "100% Anti Spam Huruf. Menggunakan Thread Lock & Smart Suffix Typer untuk ngetik murni tanpa tumpang tindih.",
+        Title = "Bot Tebak Kata (V21 - The Ghost Touch)",
+        Desc = "100% Optimasi Mobile. Tidak ada icon mouse PC, auto hapus 15x secepat kilat jika giliran dicuri.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
