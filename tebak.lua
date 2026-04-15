@@ -35,7 +35,7 @@ return function(WindUI, TebakKataTab)
         XENON XILOFON
         YA YAHUDI YAKIN YAITU YAYASAN YOGA YOYO YUNANI
         ZAITUN ZAKAT ZAMAN ZAMRUD ZAT ZEBRA ZIARAH ZONA
-        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI ITEM MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN AYAM AYAT AYAH UPIL UPAH UPA UPACARA KAKI KAKAK KAKEK HARUS HARI HALO
+        SIRAM SIRUP SIRNA SIREN SIRIH SIRKAT KITA SEKITAR SAKIT BUKIT KAMU KAMI MEREKA ISAP ISI ISLAM ISTANA ISTIRAHAT ISTRI ITEM MINYAK MINGGU MINUM MINTA MINA MISAL MISTERI MISKIN AYAM AYAT AYAH UPIL UPAH UPA UPACARA KAKI KAKAK KAKEK HARUS HARI HALO LAMPU LAMA LAMBAT
     ]=]
 
     local Dictionary = {}
@@ -50,6 +50,13 @@ return function(WindUI, TebakKataTab)
     local typingDelay = 0.05 
     local botStateStatus = "Standby..."
     local StatusLabelUI = nil 
+
+    -- Blokir UI Button
+    local BLACKLIST_PROMPT = {
+        ["ON"]=true, ["OFF"]=true, ["BOT"]=true, ["UI"]=true, ["KITA"]=true, ["PILIH"]=true, 
+        ["ITEM"]=true, ["MODE"]=true, ["SHOP"]=true, ["MENU"]=true, ["NORMAL"]=true, 
+        ["BRUTAL"]=true, ["SANTAI"]=true, ["WAKTU"]=true, ["SUARA"]=true, ["PEMUNGUTAN"]=true
+    }
 
     local function UpdateStatus(text)
         botStateStatus = text
@@ -142,7 +149,7 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI GAIB: SINGLE-THREAD CLICKER (ANTI-SPAM)
+    -- FUNGSI GAIB: KLIK UI KEYBOARD
     -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
@@ -157,7 +164,6 @@ return function(WindUI, TebakKataTab)
 
     local function SafeSingleClick(gui)
         local success = false
-        -- Metode Anti-Double: Hanya tembak 1 sinyal koneksi pertama yang valid!
         if typeof(getconnections) == "function" then
             pcall(function()
                 local clickConns = getconnections(gui.MouseButton1Click)
@@ -174,7 +180,6 @@ return function(WindUI, TebakKataTab)
             end)
         end
         
-        -- Fallback jika eksekutor tidak punya getconnections
         if not success and typeof(firesignal) == "function" then
             pcall(function() firesignal(gui.MouseButton1Click) end)
             success = true
@@ -212,9 +217,6 @@ return function(WindUI, TebakKataTab)
         return false
     end
 
-    -- ==========================================
-    -- TURN DETECTOR: Cek Apakah Keyboard Muncul
-    -- ==========================================
     local function IsItMyTurn()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return false end
@@ -241,8 +243,20 @@ return function(WindUI, TebakKataTab)
         local wordUpper = string.upper(word)
         local promptUpper = string.upper(prompt or "")
         
+        -- MENCEGAH BUG HURUF NUMPUK
+        pcall(function()
+            local vim = game:GetService("VirtualInputManager")
+            if vim then
+                for _ = 1, 10 do
+                    vim:SendKeyEvent(true, Enum.KeyCode.Backspace, false, game)
+                    task.wait(0.01)
+                    vim:SendKeyEvent(false, Enum.KeyCode.Backspace, false, game)
+                end
+            end
+        end)
+        task.wait(0.1)
+
         -- KITA HANYA NGETIK SISA HURUFNYA
-        -- Contoh: Word="KAKI", Prompt="KA" -> stringToType="KI"
         local stringToType = wordUpper
         if promptUpper ~= "" and string.sub(wordUpper, 1, string.len(promptUpper)) == promptUpper then
             stringToType = string.sub(wordUpper, string.len(promptUpper) + 1)
@@ -261,28 +275,31 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: Y-AXIS ALIGNMENT (ANTI SALAH BACA)
+    -- FUNGSI SCANNER V15: X-AXIS COMBINER (THE PERFECT READER)
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return nil end
         
         local hurufnyaY = nil
+        local hurufnyaX = nil
         
-        -- 1. Cari jangkar koordinat Y dari tulisan "Hurufnya adalah:"
+        -- TAHAP 1: Cari koordinat Label jangkar "Hurufnya adalah:"
         for _, screenGui in ipairs(pg:GetChildren()) do
             if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                 for _, gui in ipairs(screenGui:GetDescendants()) do
                     if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
                         local rawText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
+                        
+                        -- Cek apakah dev gamenya menempelkan soalnya jadi satu ("HURUFNYA ADALAH: AM")
+                        local exactMatch = string.match(rawText, "HURUFNYA[^:]*:%s*([A-Z]+)")
+                        if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 4 then
+                            return exactMatch
+                        end
+                        
                         if string.find(rawText, "HURUFNYA") then
                             hurufnyaY = gui.AbsolutePosition.Y
-                            
-                            -- Jika game menggabungkannya di 1 label (HURUFNYA ADALAH: KA)
-                            local exactMatch = string.match(rawText, "HURUFNYA[^:]*:%s*([A-Z]+)")
-                            if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 4 then
-                                return exactMatch
-                            end
+                            hurufnyaX = gui.AbsolutePosition.X
                             break
                         end
                     end
@@ -290,8 +307,10 @@ return function(WindUI, TebakKataTab)
             end
         end
 
-        -- 2. Jika dipisah, cari TextLabel yang berada di garis lurus (Y-Axis) yang sama!
+        -- TAHAP 2: Kumpulkan semua kotak huruf yang terpisah (Misal "L", "A", "M" atau "A", "M")
         if hurufnyaY then
+            local promptLetters = {}
+            
             for _, screenGui in ipairs(pg:GetChildren()) do
                 if screenGui:IsA("ScreenGui") and screenGui.Enabled and screenGui.Name ~= "SYNC_TebakKataGUI" then
                     for _, gui in ipairs(screenGui:GetDescendants()) do
@@ -299,17 +318,54 @@ return function(WindUI, TebakKataTab)
                             local rawText = string.upper(string.gsub(gui.Text, "<[^>]+>", ""))
                             local stripped = string.gsub(rawText, "%s+", "")
                             
-                            -- Pastikan itu berisi 1-4 huruf A-Z murni
                             if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
-                                -- MENCEGAH BACA UI LAIN: Posisi Y nya harus sama/sejajar dengan "Hurufnya adalah:"
-                                local diff = math.abs(gui.AbsolutePosition.Y - hurufnyaY)
-                                if diff < 30 then
-                                    return stripped
+                                if not BLACKLIST_PROMPT[stripped] then
+                                    -- Syarat: Harus sejajar pada garis Y (Toleransi 20 Pixel) 
+                                    -- & Berada di sebelah KANAN teks "Hurufnya adalah:"
+                                    local diffY = math.abs(gui.AbsolutePosition.Y - hurufnyaY)
+                                    if diffY < 20 and gui.AbsolutePosition.X >= (hurufnyaX - 10) then
+                                        table.insert(promptLetters, {
+                                            text = stripped,
+                                            x = gui.AbsolutePosition.X
+                                        })
+                                    end
                                 end
                             end
                         end
                     end
                 end
+            end
+            
+            -- TAHAP 3: Satukan serpihan kotak huruf menjadi 1 kata utuh dari Kiri ke Kanan!
+            if #promptLetters > 0 then
+                -- Urutkan berdasarkan koordinat X
+                table.sort(promptLetters, function(a, b) return a.x < b.x end)
+                
+                local finalPrompt = ""
+                local seenTexts = {}
+                
+                for _, letter in ipairs(promptLetters) do
+                    -- Filter Anti-Shadow: Jika ada huruf berdekatan dengan isi yang sama, abaikan!
+                    local isShadow = false
+                    for _, seen in ipairs(seenTexts) do
+                        if math.abs(letter.x - seen.x) < 10 and letter.text == seen.text then
+                            isShadow = true
+                            break
+                        end
+                    end
+                    
+                    if not isShadow then
+                        finalPrompt = finalPrompt .. letter.text
+                        table.insert(seenTexts, letter)
+                    end
+                end
+                
+                -- Batas aman panjang soal di game ini (Maksimal 4 Huruf)
+                if string.len(finalPrompt) > 4 then
+                    finalPrompt = string.sub(finalPrompt, 1, 4)
+                end
+                
+                return finalPrompt
             end
         end
         return nil
@@ -337,7 +393,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (PURE TURN-BASED)
+    -- LOGIKA UTAMA BOT
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
@@ -356,9 +412,9 @@ return function(WindUI, TebakKataTab)
                         if currentPrompt ~= lastPrompt then
                             UpdateStatus("GILIRAN KITA! Soal: " .. currentPrompt)
                             
-                            -- Cari kata yang DIAWALI dengan prompt
                             local possibleWords = {}
                             for _, word in ipairs(Dictionary) do
+                                -- Wajib Berawalan! (Agar tidak MSALAM)
                                 if string.match(word, "^" .. currentPrompt) and not usedWords[word] then
                                     table.insert(possibleWords, word)
                                 end
@@ -388,7 +444,6 @@ return function(WindUI, TebakKataTab)
                     end
                 else
                     -- ================== BUKAN GILIRAN KITA ==================
-                    -- RESET KUNCIAN: Otak bot kembali segar untuk giliran selanjutnya
                     lastPrompt = ""
                     answeredThisTurn = false
                     UpdateStatus("Menunggu Giliran / Match Dimulai...")
@@ -407,7 +462,7 @@ return function(WindUI, TebakKataTab)
         if isBotActive then
             ToggleBotBtn.Text = "BOT: ON"
             ToggleBotBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
-            usedWords = {} -- Reset memori otomatis saat bot dinyalakan
+            usedWords = {} 
             UpdateStatus("Sistem Bot Siap.")
             BotLoop()
         else
@@ -433,8 +488,8 @@ return function(WindUI, TebakKataTab)
     })
 
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V14 - The God Tier)",
-        Desc = "Pembaruan total. Anti salah baca (Y-Axis Scanner) dan anti ngetik spam (Single-Thread Clicker).",
+        Title = "Bot Tebak Kata (V15 - Final Axis)",
+        Desc = "100% Akurat membaca semua jenis huruf yang dipisah-pisah oleh developer game.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
