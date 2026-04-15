@@ -51,6 +51,14 @@ return function(WindUI, TebakKataTab)
     local botStateStatus = "Menunggu Game Dimulai..."
     local StatusLabelUI = nil 
 
+    -- Blokir kata-kata UI agar bot tidak tertipu!
+    local BLACKLIST_PROMPT = {
+        ["ITEM"] = true, ["MODE"] = true, ["SHOP"] = true, ["MENU"] = true, 
+        ["BACK"] = true, ["PLAY"] = true, ["EXIT"] = true, ["HOME"] = true, 
+        ["TIME"] = true, ["VOTE"] = true, ["ON"] = true, ["OFF"] = true, 
+        ["BOT"] = true, ["UI"] = true, ["KITA"] = true, ["PILIH"] = true
+    }
+
     local function UpdateStatus(text)
         botStateStatus = text
         if StatusLabelUI then StatusLabelUI.Text = "Status: " .. text end
@@ -73,11 +81,8 @@ return function(WindUI, TebakKataTab)
     CircleWidget.TextSize = 20
     CircleWidget.Parent = FloatingUI
     Instance.new("UICorner", CircleWidget).CornerRadius = UDim.new(1, 0)
-    
-    local WidgetStroke = Instance.new("UIStroke")
-    WidgetStroke.Color = Color3.fromRGB(41, 248, 155)
-    WidgetStroke.Thickness = 2
-    WidgetStroke.Parent = CircleWidget
+    Instance.new("UIStroke", CircleWidget).Color = Color3.fromRGB(41, 248, 155)
+    Instance.new("UIStroke", CircleWidget).Thickness = 2
 
     local MainPanel = Instance.new("Frame")
     MainPanel.Size = UDim2.new(0, 240, 0, 130)
@@ -86,11 +91,8 @@ return function(WindUI, TebakKataTab)
     MainPanel.Visible = false
     MainPanel.Parent = FloatingUI
     Instance.new("UICorner", MainPanel).CornerRadius = UDim.new(0, 10)
-
-    local PanelStroke = Instance.new("UIStroke")
-    PanelStroke.Color = Color3.fromRGB(41, 248, 155)
-    PanelStroke.Thickness = 1.5
-    PanelStroke.Parent = MainPanel
+    Instance.new("UIStroke", MainPanel).Color = Color3.fromRGB(41, 248, 155)
+    Instance.new("UIStroke", MainPanel).Thickness = 1.5
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Size = UDim2.new(1, 0, 0, 25)
@@ -123,28 +125,19 @@ return function(WindUI, TebakKataTab)
     Instance.new("UICorner", ToggleBotBtn).CornerRadius = UDim.new(0, 6)
     ToggleBotBtn.Parent = MainPanel
 
-    -- ==========================================
-    -- LOGIKA UI CUSTOM (DRAG)
-    -- ==========================================
     local isDraggingWidget = false
     local dragStart, startPos, hasMoved
 
     CircleWidget.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDraggingWidget = true
-            hasMoved = false
-            dragStart = input.Position
-            startPos = CircleWidget.Position
+            isDraggingWidget = true; hasMoved = false; dragStart = input.Position; startPos = CircleWidget.Position
         end
     end)
-
     CircleWidget.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            isDraggingWidget = false
-            if not hasMoved then MainPanel.Visible = not MainPanel.Visible end
+            isDraggingWidget = false; if not hasMoved then MainPanel.Visible = not MainPanel.Visible end
         end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
         if isDraggingWidget and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             local delta = input.Position - dragStart
@@ -157,8 +150,22 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI DEEP SCANNER
+    -- FUNGSI GAIB: KLIK VISUAL TITIK MERAH 🔴
     -- ==========================================
+    local function CreateVisualRedDot(x, y)
+        task.spawn(function()
+            local dot = Instance.new("Frame")
+            dot.Size = UDim2.new(0, 15, 0, 15)
+            dot.Position = UDim2.new(0, x - 7.5, 0, y - 7.5)
+            dot.BackgroundColor3 = Color3.new(1, 0, 0)
+            dot.ZIndex = 99999
+            dot.Parent = FloatingUI
+            Instance.new("UICorner", dot).CornerRadius = UDim.new(1,0)
+            task.wait(0.2)
+            dot:Destroy()
+        end)
+    end
+
     local function DeepFindButtonText(gui)
         local text = ""
         if gui:IsA("TextButton") or gui:IsA("TextLabel") then text = gui.Text end
@@ -171,36 +178,37 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI GAIB: SIMULASI SENTUHAN JARI (MOBILE)
+    -- FUNGSI GAIB: SIMULASI SENTUHAN JARI ULTIMATE
     -- ==========================================
-    local function SimulateTouchAndClick(gui)
+    local function ForceClickGUI(gui)
         local clicked = false
-        
-        -- 1. Simulasi Jari Murni (Sangat Akurat untuk Android)
+        local absPos = gui.AbsolutePosition
+        local absSize = gui.AbsoluteSize
+        local x = absPos.X + (absSize.X / 2)
+        local y = absPos.Y + (absSize.Y / 2)
+        local inset = game:GetService("GuiService"):GetGuiInset()
+        local adjustedY = y + inset.Y
+
+        -- Munculkan titik merah agar kamu tahu bot berhasil menemukan tombolnya
+        CreateVisualRedDot(x, y)
+
         pcall(function()
             local vim = game:GetService("VirtualInputManager")
             if vim then
-                local absPos = gui.AbsolutePosition
-                local absSize = gui.AbsoluteSize
-                local x = absPos.X + (absSize.X / 2)
-                local y = absPos.Y + (absSize.Y / 2)
-                local inset = game:GetService("GuiService"):GetGuiInset()
-                y = y + inset.Y
-                
-                -- Touch Event (Untuk HP)
-                pcall(function() vim:SendTouchEvent(1, 0, x, y) end) -- Tekan
+                -- SIMULASI 1: TOUCH SCREEN HP ANDROID
+                vim:SendTouchEvent(1, 0, x, adjustedY)
                 task.wait(0.01)
-                pcall(function() vim:SendTouchEvent(1, 2, x, y) end) -- Lepas
+                vim:SendTouchEvent(1, 2, x, adjustedY)
                 
-                -- Mouse Event (Untuk PC)
-                pcall(function() vim:SendMouseButtonEvent(x, y, 0, true, game, 0) end)
+                -- SIMULASI 2: KLIK MOUSE PC
+                vim:SendMouseButtonEvent(x, adjustedY, 0, true, game, 0)
                 task.wait(0.01)
-                pcall(function() vim:SendMouseButtonEvent(x, y, 0, false, game, 0) end)
+                vim:SendMouseButtonEvent(x, adjustedY, 0, false, game, 0)
                 clicked = true
             end
         end)
         
-        -- 2. Fallback Click Internal Roblox
+        -- SIMULASI 3: INTERNAL SCRIPT FIRE
         local fSignal = getgenv().firesignal or firesignal
         if typeof(fSignal) == "function" then
             pcall(function() fSignal(gui.MouseButton1Click) end)
@@ -227,7 +235,6 @@ return function(WindUI, TebakKataTab)
         
         local tTarget = string.upper(targetText)
         for _, gui in ipairs(pg:GetDescendants()) do
-            -- Memastikan tombol benar-benar terlihat dan mempunya ukuran di layar
             if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible and gui.AbsoluteSize.X > 0 and gui.AbsolutePosition.Y > 0 then
                 local text = DeepFindButtonText(gui)
                 
@@ -239,7 +246,7 @@ return function(WindUI, TebakKataTab)
                 end
 
                 if isMatch then
-                    SimulateTouchAndClick(gui)
+                    ForceClickGUI(gui)
                     return true
                 end
             end
@@ -272,17 +279,20 @@ return function(WindUI, TebakKataTab)
         
         for i = 1, #wordUpper do
             local char = string.sub(wordUpper, i, i)
-            clickUIButton(char)
+            local success = clickUIButton(char)
             
-            pcall(function()
-                local vim = game:GetService("VirtualInputManager")
-                local keycode = Enum.KeyCode[char]
-                if keycode then
-                    vim:SendKeyEvent(true, keycode, false, game)
-                    task.wait(0.01)
-                    vim:SendKeyEvent(false, keycode, false, game)
-                end
-            end)
+            -- Jika klik UI gagal, coba suntik teks murni lewat VirtualInputManager
+            if not success then
+                pcall(function()
+                    local vim = game:GetService("VirtualInputManager")
+                    local keycode = Enum.KeyCode[char]
+                    if keycode then
+                        vim:SendKeyEvent(true, keycode, false, game)
+                        task.wait(0.01)
+                        vim:SendKeyEvent(false, keycode, false, game)
+                    end
+                end)
+            end
             task.wait(typingDelay)
         end
         
@@ -302,57 +312,63 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: MATA SHARINGAN V5 (Anti-False Positive)
+    -- FUNGSI SCANNER V5: SPATIAL RADAR (Jarak Dekat)
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return nil end
         
-        local isPlayingMatch = false
-        local textLabels = {}
+        local hurufnyaLabel = nil
+        local validLabels = {}
         
-        -- PASS 1: Kumpulkan semua teks dan cari kunci wajib "HURUFNYA"
+        -- PASS 1: Kumpulkan teks dan cari jangkar utama "HURUFNYA"
         for _, gui in ipairs(pg:GetDescendants()) do
-            if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 and gui.AbsolutePosition.X >= 0 then
+            if gui:IsA("TextLabel") and gui.Visible and gui.AbsoluteSize.X > 0 then
                 local rawText = string.gsub(gui.Text, "<[^>]+>", "")
                 local textUpper = string.upper(rawText)
                 
-                table.insert(textLabels, {gui = gui, text = textUpper})
-                
-                if string.find(textUpper, "HURUFNYA") then
-                    isPlayingMatch = true
+                -- Cek kalau digabung "HURUFNYA ADALAH: IS"
+                local exactMatch = string.match(textUpper, "HURUFNYA[^:]*:%s*([A-Z]+)")
+                if exactMatch and string.len(exactMatch) >= 1 and string.len(exactMatch) <= 4 then
+                    return exactMatch
                 end
-            end
-        end
-
-        -- Jika tidak ada kata HURUFNYA, berarti match belum mulai / layar voting
-        if not isPlayingMatch then return nil end
-
-        -- PASS 2: Jika match berjalan, cari soalnya!
-        local bestPrompt = nil
-        local largestSize = 0
-        
-        for _, item in ipairs(textLabels) do
-            -- Pola 1: Jika digabung jadi satu baris ("HURUFNYA ADALAH: IS")
-            local match1 = string.match(item.text, "HURUFNYA[^:]*:%s*([A-Z]+)")
-            if match1 and string.len(match1) >= 1 and string.len(match1) <= 4 then
-                return match1
-            end
-            
-            -- Pola 2: Jika dipisah, cari teks 1-4 huruf terbesar di layar (Abaikan UI Bot sendiri)
-            local stripped = string.gsub(item.text, "%s+", "")
-            if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
-                if stripped ~= "BOT" and stripped ~= "ON" and stripped ~= "OFF" and stripped ~= "UI" then
-                    local size = item.gui.TextSize or item.gui.AbsoluteSize.Y
-                    if size > largestSize then
-                        largestSize = size
-                        bestPrompt = stripped
+                
+                -- Jika ketemu kata "HURUFNYA", simpan sebagai jangkar lokasi
+                if string.find(textUpper, "HURUFNYA") then
+                    hurufnyaLabel = gui
+                end
+                
+                local stripped = string.gsub(textUpper, "%s+", "")
+                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
+                    if not BLACKLIST_PROMPT[stripped] then
+                        table.insert(validLabels, {gui = gui, text = stripped})
                     end
                 end
             end
         end
+
+        -- PASS 2: Jika "HURUFNYA" ditemukan dan hurufnya dipisah kotak
+        if hurufnyaLabel and #validLabels > 0 then
+            local bestPrompt = nil
+            local minDistance = math.huge
+            
+            local anchorPos = hurufnyaLabel.AbsolutePosition + (hurufnyaLabel.AbsoluteSize / 2)
+            
+            -- Ukur jarak setiap teks 1-4 huruf ke tulisan "HURUFNYA"
+            for _, item in ipairs(validLabels) do
+                local itemPos = item.gui.AbsolutePosition + (item.gui.AbsoluteSize / 2)
+                local dist = (anchorPos - itemPos).Magnitude
+                
+                -- Ambil yang posisinya paling dekat dengan tulisan "HURUFNYA"
+                if dist < minDistance and dist < 300 then
+                    minDistance = dist
+                    bestPrompt = item.text
+                end
+            end
+            return bestPrompt
+        end
         
-        return bestPrompt
+        return nil
     end
 
     local function ScanOpponentWords()
@@ -373,7 +389,7 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (SMART TURN DETECTOR)
+    -- LOGIKA UTAMA BOT
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
@@ -390,7 +406,6 @@ return function(WindUI, TebakKataTab)
                     isPlayingMatch = true
                     idleTime = 0
                     
-                    -- Cek Giliran
                     if IsItMyTurn() then
                         if not answeredThisTurn then
                             UpdateStatus("GILIRANMU! Menjawab: " .. currentPrompt)
@@ -406,7 +421,7 @@ return function(WindUI, TebakKataTab)
                                 local randomIndex = math.random(1, #possibleWords)
                                 local chosenWord = possibleWords[randomIndex]
                                 
-                                task.wait(0.3) -- Jeda mikir biar natural
+                                task.wait(0.3) 
                                 TypeAndSubmitWord(chosenWord)
                                 answeredThisTurn = true 
                                 task.wait(1.5) 
@@ -417,28 +432,25 @@ return function(WindUI, TebakKataTab)
                             UpdateStatus("Menunggu Lawan Mengetik...")
                         end
                     else
-                        answeredThisTurn = false -- Reset kunci ngetik untuk giliran berikutnya
+                        answeredThisTurn = false 
                         UpdateStatus("Menunggu Giliran (Soal: " .. currentPrompt .. ")")
                     end
                 else
-                    -- MATCH KOSONG / SELESAI
                     if isPlayingMatch then
                         idleTime = idleTime + 0.2
-                        -- Tunggu 18 Detik penuh sebelum mereset
                         if idleTime > 18 then
                             usedWords = {} 
                             isPlayingMatch = false
                             answeredThisTurn = false
                             UpdateStatus("Menunggu Game Dimulai...")
                             if FloatingUI.Enabled then
-                                WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori direset otomatis!", Duration=2})
+                                WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori direset!", Duration=2})
                             end
                         end
                     else
                         UpdateStatus("Menunggu Game Dimulai...")
                     end
                 end
-                
                 task.wait(0.2) 
             end
         end)
@@ -461,7 +473,6 @@ return function(WindUI, TebakKataTab)
         end
     end)
 
-    -- DROPDOWN KECEPATAN
     TebakKataTab:Dropdown({
         Title = "Kecepatan Ngetik Bot",
         Values = {"Sangat Lambat", "Lambat", "Normal", "Cepat", "Super Cepat"},
@@ -477,12 +488,9 @@ return function(WindUI, TebakKataTab)
         end
     })
 
-    -- ==========================================
-    -- TAB WIND UI UTAMA
-    -- ==========================================
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V6)",
-        Desc = "Sistem berjalan di Floating Panel khusus dengan Touch-Simulator asli untuk Android.",
+        Title = "Bot Tebak Kata (V7 - Spatial Radar)",
+        Desc = "Dilengkapi Spatial Radar Anti-False Positive & Visual Red Dot Clicker.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
