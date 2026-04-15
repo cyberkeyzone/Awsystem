@@ -83,8 +83,8 @@ return function(WindUI, TebakKataTab)
     WidgetStroke.Parent = CircleWidget
 
     local MainPanel = Instance.new("Frame")
-    MainPanel.Size = UDim2.new(0, 220, 0, 130)
-    MainPanel.Position = UDim2.new(0.5, -110, 0.1, 55)
+    MainPanel.Size = UDim2.new(0, 230, 0, 130)
+    MainPanel.Position = UDim2.new(0.5, -115, 0.1, 55)
     MainPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
     MainPanel.Visible = false
     MainPanel.Parent = FloatingUI
@@ -214,7 +214,7 @@ return function(WindUI, TebakKataTab)
     end)
 
     -- ==========================================
-    -- FUNGSI DEEP SCANNER
+    -- FUNGSI DEEP SCANNER (Teks di UI)
     -- ==========================================
     local function DeepFindButtonText(gui)
         local text = ""
@@ -237,7 +237,7 @@ return function(WindUI, TebakKataTab)
         local tTarget = string.upper(targetText)
 
         for _, gui in ipairs(pg:GetDescendants()) do
-            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.Visible then
+            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.AbsoluteSize.X > 0 and gui.Visible then
                 local text = DeepFindButtonText(gui)
                 
                 local isMatch = false
@@ -248,6 +248,7 @@ return function(WindUI, TebakKataTab)
                 end
 
                 if isMatch then
+                    -- 1. Virtual Screen Tap (Paling stabil di Mobile)
                     pcall(function()
                         local vim = game:GetService("VirtualInputManager")
                         if vim then
@@ -263,19 +264,41 @@ return function(WindUI, TebakKataTab)
                         end
                     end)
                     
+                    -- 2. Fallback Click Event Brutal
                     local fSignal = getgenv().firesignal or firesignal
                     if typeof(fSignal) == "function" then
                         pcall(function() fSignal(gui.MouseButton1Click) end)
+                        pcall(function() fSignal(gui.MouseButton1Down) end)
+                        pcall(function() fSignal(gui.MouseButton1Up) end)
                         pcall(function() fSignal(gui.Activated) end)
                     end
                     
                     if typeof(getconnections) == "function" then
                         pcall(function()
                             for _, conn in pairs(getconnections(gui.MouseButton1Click)) do conn:Fire() end
+                            for _, conn in pairs(getconnections(gui.MouseButton1Down)) do conn:Fire() end
+                            for _, conn in pairs(getconnections(gui.MouseButton1Up)) do conn:Fire() end
                             for _, conn in pairs(getconnections(gui.Activated)) do conn:Fire() end
                         end)
                     end
-                    
+                    return true
+                end
+            end
+        end
+        return false
+    end
+
+    -- ==========================================
+    -- FUNGSI GAIB: CEK GILIRAN KITA
+    -- ==========================================
+    local function IsItMyTurn()
+        local pg = lp:FindFirstChild("PlayerGui")
+        if not pg then return false end
+        for _, gui in ipairs(pg:GetDescendants()) do
+            if (gui:IsA("TextButton") or gui:IsA("ImageButton")) and gui.AbsoluteSize.X > 0 and gui.Visible then
+                local text = DeepFindButtonText(gui)
+                -- Jika tombol enter keyboard ada di layar, berarti giliran kita mengetik!
+                if text == "MASUK" or text == "ENTER" or text == "SUBMIT" or text == "JAWAB" then
                     return true
                 end
             end
@@ -322,36 +345,56 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- FUNGSI SCANNER: MENCARI SOAL
+    -- FUNGSI SCANNER V4: MATA SHARINGAN (Two-Pass)
     -- ==========================================
     local function GetCurrentPrompt()
         local pg = lp:FindFirstChild("PlayerGui")
         if not pg then return nil end
         
-        local bestPrompt = nil
-        local largestSize = 0
-
+        local isPlaying = false
+        
+        -- PASS 1: Identifikasi apakah match sedang berjalan (Ada kata "HURUFNYA")
         for _, gui in ipairs(pg:GetDescendants()) do
-            if gui:IsA("TextLabel") and gui.Visible then
+            if gui:IsA("TextLabel") and gui.AbsoluteSize.X > 0 and gui.Visible then
                 local rawText = string.gsub(gui.Text, "<[^>]+>", "")
                 local textUpper = string.upper(rawText)
                 
-                local promptMatch = string.match(textUpper, "HURUFNYA[^:]*:%s*([A-Z]+)")
-                if promptMatch then
-                    return promptMatch
-                end
-                
-                local stripped = string.gsub(textUpper, "%s+", "")
-                if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
-                    local size = gui.TextSize or (gui.AbsoluteSize and gui.AbsoluteSize.Y) or 0
-                    if size > 30 and size > largestSize then
-                        largestSize = size
-                        bestPrompt = stripped
+                if string.match(textUpper, "HURUFNYA") then
+                    isPlaying = true
+                    -- Cek kalau prompt nya digabung 1 baris
+                    local promptMatch = string.match(textUpper, "HURUFNYA[^:]*:%s*([A-Z]+)")
+                    if promptMatch and string.len(promptMatch) <= 4 then
+                        return promptMatch
                     end
                 end
             end
         end
-        return bestPrompt
+
+        -- PASS 2: Jika match berjalan tapi kotak huruf terpisah
+        if isPlaying then
+            local bestPrompt = nil
+            local largestSize = 0
+            for _, gui in ipairs(pg:GetDescendants()) do
+                if gui:IsA("TextLabel") and gui.AbsoluteSize.X > 0 and gui.Visible then
+                    local rawText = string.gsub(gui.Text, "<[^>]+>", "")
+                    local stripped = string.upper(string.gsub(rawText, "%s+", ""))
+                    
+                    if string.match(stripped, "^[A-Z]+$") and string.len(stripped) >= 1 and string.len(stripped) <= 4 then
+                        -- Jangan sampai membaca UI Bot kita sendiri
+                        if stripped ~= "ON" and stripped ~= "OFF" and stripped ~= "BOT" and stripped ~= "UI" then
+                            local size = gui.TextSize or gui.AbsoluteSize.Y
+                            if size > largestSize then
+                                largestSize = size
+                                bestPrompt = stripped
+                            end
+                        end
+                    end
+                end
+            end
+            return bestPrompt
+        end
+        
+        return nil
     end
 
     local function ScanOpponentWords()
@@ -372,11 +415,11 @@ return function(WindUI, TebakKataTab)
     end
 
     -- ==========================================
-    -- LOGIKA UTAMA BOT (AUTO RESET 18 DETIK)
+    -- LOGIKA UTAMA BOT (DENGAN SMART TURN DETECTOR)
     -- ==========================================
     local function BotLoop()
         task.spawn(function()
-            local lastPrompt = ""
+            local answeredThisTurn = false
             local isPlayingMatch = false
             local idleTime = 0
             
@@ -387,44 +430,54 @@ return function(WindUI, TebakKataTab)
                 if currentPrompt and currentPrompt ~= "" then
                     isPlayingMatch = true
                     idleTime = 0
-                    UpdateStatus("Sedang Bermain! (Mencari: " .. currentPrompt .. ")")
                     
-                    if currentPrompt ~= lastPrompt then
-                        local possibleWords = {}
-                        for _, word in ipairs(Dictionary) do
-                            if string.match(word, currentPrompt) and not usedWords[word] then
-                                table.insert(possibleWords, word)
-                            end
-                        end
-                        
-                        if #possibleWords > 0 then
-                            local randomIndex = math.random(1, #possibleWords)
-                            local chosenWord = possibleWords[randomIndex]
+                    -- Cek apakah Tombol MASUK (Keyboard) muncul? Berarti giliran kita!
+                    if IsItMyTurn() then
+                        if not answeredThisTurn then
+                            UpdateStatus("GILIRANMU! Menjawab soal: " .. currentPrompt)
                             
-                            task.wait(0.5) 
-                            TypeAndSubmitWord(chosenWord)
-                            lastPrompt = currentPrompt
-                            task.wait(2.0) 
+                            local possibleWords = {}
+                            for _, word in ipairs(Dictionary) do
+                                if string.match(word, currentPrompt) and not usedWords[word] then
+                                    table.insert(possibleWords, word)
+                                end
+                            end
+                            
+                            if #possibleWords > 0 then
+                                local randomIndex = math.random(1, #possibleWords)
+                                local chosenWord = possibleWords[randomIndex]
+                                
+                                task.wait(0.3) -- Jeda sedikit biar kelihatan natural
+                                TypeAndSubmitWord(chosenWord)
+                                answeredThisTurn = true -- Kunci agar tidak mengetik ganda
+                                task.wait(2.0) 
+                            else
+                                UpdateStatus("Kata habis untuk: " .. currentPrompt)
+                            end
                         else
-                            UpdateStatus("Kata habis untuk: " .. currentPrompt)
-                            lastPrompt = currentPrompt 
+                            UpdateStatus("Menunggu Lawan Mengetik...")
                         end
+                    else
+                        -- Jika bukan giliran kita, buka kunci jawaban untuk giliran selanjutnya
+                        answeredThisTurn = false
+                        UpdateStatus("Menunggu Giliran (Soal: " .. currentPrompt .. ")")
                     end
                 else
+                    -- JIKA SOAL HILANG (MATCH SELESAI / LOBBY)
                     if isPlayingMatch then
                         idleTime = idleTime + 0.2
-                        -- Diubah menjadi 18 DETIK sesuai permintaan
+                        -- Tunggu 18 DETIK penuh sebelum mereset memori
                         if idleTime > 18 then
                             usedWords = {} 
                             isPlayingMatch = false
-                            lastPrompt = ""
-                            UpdateStatus("Menunggu Match Dimulai...")
+                            answeredThisTurn = false
+                            UpdateStatus("Menunggu Game Dimulai...")
                             if FloatingUI.Enabled then
-                                WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori bot direset otomatis!", Duration=2})
+                                WindUI:Notify({Title="Selesai", Content="Match berakhir. Memori direset!", Duration=2})
                             end
                         end
                     else
-                        UpdateStatus("Menunggu Match Dimulai...")
+                        UpdateStatus("Menunggu Game Dimulai...")
                     end
                 end
                 
@@ -454,8 +507,8 @@ return function(WindUI, TebakKataTab)
     -- TAB WIND UI UTAMA
     -- ==========================================
     TebakKataTab:Paragraph({
-        Title = "Bot Tebak Kata (V4)",
-        Desc = "Sistem berjalan di Floating Panel khusus dengan Auto-Reset 18 Detik.",
+        Title = "Bot Tebak Kata (V5)",
+        Desc = "Sistem berjalan di Floating Panel khusus dengan Smart Turn-Detector & Auto-Reset 18 Detik.",
         Color = Color3.fromHex("#0F7BFF")
     })
 
